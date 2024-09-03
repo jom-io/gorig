@@ -2,9 +2,9 @@ package httpx
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/global/consts"
+	"github.com/jom-io/gorig/utils/logger"
 	"go.uber.org/zap"
-	"gorig/global/consts"
-	"gorig/utils/logger"
 )
 
 var restLogger = logger.GetLogger("rest")

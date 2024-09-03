@@ -3,9 +3,9 @@ package domainx
 import (
 	"context"
 	"fmt"
-	"gorig/apix/load"
-	"gorig/utils/errors"
-	"gorig/utils/sys"
+	"github.com/jom-io/gorig/apix/load"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/sys"
 	"sync"
 	"time"
 )

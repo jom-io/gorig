@@ -1,8 +1,8 @@
 package domainx
 
 import (
-	"gorig/serv"
-	"gorig/utils/sys"
+	"github.com/jom-io/gorig/serv"
+	"github.com/jom-io/gorig/utils/sys"
 )
 
 func init() {

@@ -2,11 +2,11 @@ package bootstrap
 
 import (
 	"github.com/gin-gonic/gin"
-	_ "gorig/cronx"
-	_ "gorig/domainx"
-	"gorig/httpx"
-	"gorig/serv"
-	"gorig/utils/sys"
+	_ "github.com/jom-io/gorig/cronx"
+	_ "github.com/jom-io/gorig/domainx"
+	"github.com/jom-io/gorig/httpx"
+	"github.com/jom-io/gorig/serv"
+	"github.com/jom-io/gorig/utils/sys"
 )
 
 func StartUp() {

@@ -3,10 +3,10 @@ package gormt
 import (
 	"errors"
 	"fmt"
+	"github.com/jom-io/gorig/global/errc"
+	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/utils/logger"
 	"go.uber.org/zap"
-	"gorig/global/errc"
-	configure "gorig/utils/cofigure"
-	"gorig/utils/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormLog "gorm.io/gorm/logger"

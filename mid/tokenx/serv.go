@@ -1,8 +1,8 @@
 package tokenx
 
 import (
-	configure "gorig/utils/cofigure"
-	"gorig/utils/errors"
+	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/utils/errors"
 )
 
 type GeneratorType int
@@ -18,7 +18,7 @@ const (
 	Redis
 )
 
-const defSigning = "gorig"
+const defSigning = "github.com/jom-io/gorig"
 
 const defExpire = 3600 * 24 * 3 // 默认过期时间 3天
 

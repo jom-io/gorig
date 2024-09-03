@@ -2,9 +2,9 @@ package messagex
 
 import (
 	"fmt"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
 	"go.uber.org/zap"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
 	"sync"
 	"sync/atomic"
 )

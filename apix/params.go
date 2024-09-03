@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/apix/load"
+	"github.com/jom-io/gorig/apix/response"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
-	"gorig/apix/load"
-	"gorig/apix/response"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
 	"strconv"
 )
 

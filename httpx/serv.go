@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	_ "gorig/domainx"
-	"gorig/utils/errors"
-	"gorig/utils/sys"
+	_ "github.com/jom-io/gorig/domainx"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/sys"
 	"net/http"
 	"time"
 )

@@ -1,9 +1,9 @@
 package sys
 
 import (
+	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/utils/errors"
 	"github.com/rs/xid"
-	configure "gorig/utils/cofigure"
-	"gorig/utils/errors"
 	"os"
 	"strings"
 )

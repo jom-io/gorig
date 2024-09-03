@@ -1,10 +1,10 @@
 package domainx
 
 import (
+	"github.com/jom-io/gorig/utils/errors"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/field"
 	"github.com/spf13/cast"
-	"gorig/utils/errors"
 	"gorm.io/gorm"
 	"math/rand"
 	"time"

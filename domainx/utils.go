@@ -1,9 +1,9 @@
 package domainx
 
 import (
+	"github.com/jom-io/gorig/utils/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gorig/utils/errors"
 )
 
 type Converter[T any] struct{}

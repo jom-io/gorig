@@ -1,9 +1,9 @@
 package gormt
 
 import (
-	"gorig/global/errc"
-	"gorig/global/variable"
-	"gorig/utils/logger"
+	"github.com/jom-io/gorig/global/errc"
+	"github.com/jom-io/gorig/global/variable"
+	"github.com/jom-io/gorig/utils/logger"
 	"gorm.io/gorm"
 	"reflect"
 	"strings"

@@ -2,9 +2,9 @@ package messagex
 
 import (
 	"fmt"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
-	"gorig/utils/notify/dingding"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/notify/dingding"
 	"runtime/debug"
 )
 

@@ -2,14 +2,14 @@ package domainx
 
 import (
 	"fmt"
+	"github.com/jom-io/gorig/apix/load"
+	"github.com/jom-io/gorig/global/errc"
+	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/gormt"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/sys"
 	"go.uber.org/zap"
-	"gorig/apix/load"
-	"gorig/global/errc"
-	configure "gorig/utils/cofigure"
-	"gorig/utils/errors"
-	"gorig/utils/gormt"
-	"gorig/utils/logger"
-	"gorig/utils/sys"
 	"gorm.io/gorm"
 	"strings"
 )

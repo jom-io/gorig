@@ -2,11 +2,11 @@ package cronx
 
 import (
 	"context"
+	"github.com/jom-io/gorig/serv"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/sys"
 	"github.com/robfig/cron"
 	"go.uber.org/zap"
-	"gorig/serv"
-	"gorig/utils/logger"
-	"gorig/utils/sys"
 	"reflect"
 	"runtime"
 )

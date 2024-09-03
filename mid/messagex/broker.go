@@ -3,9 +3,9 @@ package messagex
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/global/consts"
+	"github.com/jom-io/gorig/utils/errors"
 	"github.com/rs/xid"
-	"gorig/global/consts"
-	"gorig/utils/errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"

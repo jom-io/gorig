@@ -3,10 +3,10 @@ package httpx
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/apix/response"
+	"github.com/jom-io/gorig/global/consts"
+	"github.com/jom-io/gorig/mid/tokenx"
 	"github.com/spf13/cast"
-	"gorig/apix/response"
-	"gorig/global/consts"
-	"gorig/mid/tokenx"
 	"strings"
 )
 

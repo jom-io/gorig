@@ -2,8 +2,8 @@ package tokenx
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"gorig/global/errc"
-	"gorig/utils/errors"
+	"github.com/jom-io/gorig/global/errc"
+	"github.com/jom-io/gorig/utils/errors"
 	"time"
 )
 

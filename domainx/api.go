@@ -1,9 +1,9 @@
 package domainx
 
 import (
-	"gorig/apix/load"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
+	"github.com/jom-io/gorig/apix/load"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
 	"strings"
 )
 

@@ -3,11 +3,11 @@ package behaviorx
 import (
 	"context"
 	"fmt"
+	"github.com/jom-io/gorig/mid/messagex"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/sys"
 	"go.uber.org/zap"
-	"gorig/mid/messagex"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
-	"gorig/utils/sys"
 	"strings"
 )
 

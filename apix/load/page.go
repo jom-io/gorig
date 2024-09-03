@@ -2,7 +2,7 @@ package load
 
 import (
 	"github.com/gin-gonic/gin"
-	"gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/logger"
 )
 
 type Page struct {

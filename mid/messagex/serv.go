@@ -2,12 +2,12 @@ package messagex
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/httpx"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/sys"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
-	"gorig/httpx"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
-	"gorig/utils/sys"
 	"reflect"
 	"strings"
 )

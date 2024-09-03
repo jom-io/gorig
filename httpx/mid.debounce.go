@@ -2,10 +2,10 @@ package httpx
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/apix/response"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/sys"
 	"go.uber.org/zap"
-	"gorig/apix/response"
-	"gorig/utils/logger"
-	"gorig/utils/sys"
 	"hash/fnv"
 	"sync"
 	"time"

@@ -3,11 +3,11 @@ package apix
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorig/apix/response"
-	"gorig/httpx"
-	"gorig/utils/errors"
-	"gorig/utils/logger"
-	"gorig/utils/notify/dingding"
+	"github.com/jom-io/gorig/apix/response"
+	"github.com/jom-io/gorig/httpx"
+	"github.com/jom-io/gorig/utils/errors"
+	"github.com/jom-io/gorig/utils/logger"
+	"github.com/jom-io/gorig/utils/notify/dingding"
 	"runtime/debug"
 )
 

@@ -2,12 +2,12 @@ package logger
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/global/consts"
+	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/utils/sys"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"gorig/global/consts"
-	configure "gorig/utils/cofigure"
-	"gorig/utils/sys"
 	"os"
 	"strings"
 )
