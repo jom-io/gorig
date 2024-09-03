@@ -1,4 +1,4 @@
-module gorig
+module github.com/Jom-io/gorig
 
 go 1.20
 
