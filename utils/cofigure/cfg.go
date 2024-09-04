@@ -100,12 +100,14 @@ func exists(key string) bool {
 }
 
 func init() {
-	viper.SetEnvPrefix(GetString("sys.name", "github.com/jom-io/gorig"))
+	viper.SetEnvPrefix("gorig")
+	fmt.Println("sys.name: ", GetString("sys.name", ""))
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AddConfigPath("./_bin/")
 	viper.AddConfigPath("./")
 	viper.SetConfigName(GetString("sys.mode", "local"))
+	fmt.Println("sys.mode: ", GetString("sys.mode", "local"))
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()
 	if err != nil {
