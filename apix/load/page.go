@@ -1,8 +1,10 @@
 package load
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/utils/logger"
+	"go.uber.org/zap"
 )
 
 type Page struct {
@@ -12,11 +14,28 @@ type Page struct {
 }
 
 type PageResp struct {
-	Page   int64       `json:"page"`
-	Size   int64       `json:"size"`
-	Total  int64       `json:"total"`
-	LastID int64       `json:"lastID"`
-	Result interface{} `json:"result"`
+	Page   int64  `json:"page"`
+	Size   int64  `json:"size"`
+	Total  *Total `json:"total"`
+	LastID int64  `json:"lastID"`
+	Result any    `json:"result"`
+}
+
+type PageRespT[T any] struct {
+	Page   int64  `json:"page"`
+	Size   int64  `json:"size"`
+	Total  *Total `json:"total"`
+	LastID int64  `json:"lastID"`
+	Result *[]T   `json:"result"`
+}
+
+type Total int64
+
+func (t *Total) Set(total int64) {
+	if t == nil {
+		t = new(Total)
+	}
+	*t = Total(total)
 }
 
 func (p *Page) Offset() int64 {
@@ -39,9 +58,9 @@ func (p *Page) SetPage(page int64) {
 	p.Page = page
 }
 
-type Identifiable interface {
-	GetID() int64
-}
+//type Identifiable interface {
+//	GetID() int64
+//}
 
 func BuildPage(ctx *gin.Context, page, pageSize, lastId int64) *Page {
 	if page <= 0 {
@@ -67,7 +86,7 @@ func BuildPage(ctx *gin.Context, page, pageSize, lastId int64) *Page {
 	}
 }
 
-func (r *PageResp) Build(page *Page, total int64, LastID int64, result interface{}) {
+func (r *PageResp) Build(page *Page, total *Total, LastID int64, result any) {
 	r.Page = page.Page
 	r.Size = page.Size
 	r.Total = total
@@ -75,16 +94,53 @@ func (r *PageResp) Build(page *Page, total int64, LastID int64, result interface
 	r.Result = result
 }
 
-func (r *PageResp) BuildS(page *Page, LastID int64, result interface{}) {
+func (r *PageResp) BuildS(page *Page, LastID int64, result any) {
 	r.Page = page.Page
 	r.Size = page.Size
 	r.LastID = LastID
 	r.Result = result
 }
 
-func GetLastID[T Identifiable](conList []T) int64 {
-	if len(conList) > 0 {
-		return conList[len(conList)-1].GetID()
+func Covert[T any](r *PageResp) *PageRespT[T] {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error(nil, "CovertT", zap.Any("err", err))
+		}
+	}()
+	if r == nil {
+		return &PageRespT[T]{
+			Result: &[]T{},
+		}
 	}
-	return 0
+	result := new([]T)
+	// 改为用JSON序列化反序列化
+	if r.Result != nil {
+		b, _ := json.Marshal(r.Result)
+		if e := json.Unmarshal(b, result); e != nil {
+			logger.Error(nil, "CovertT", zap.Any("err", e))
+		} else {
+			return &PageRespT[T]{
+				Page:   r.Page,
+				Size:   r.Size,
+				Total:  r.Total,
+				LastID: r.LastID,
+				Result: result,
+			}
+		}
+	}
+	return &PageRespT[T]{
+		Result: &[]T{},
+	}
+}
+
+func (t *PageRespT[T]) ParsePageResp(r *PageResp, result *[]T) *PageRespT[T] {
+	if t == nil {
+		t = &PageRespT[T]{}
+	}
+	t.Page = r.Page
+	t.Size = r.Size
+	t.Total = r.Total
+	t.LastID = r.LastID
+	t.Result = result
+	return t
 }

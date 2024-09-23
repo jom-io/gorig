@@ -34,3 +34,23 @@ func (c *Converter[T]) FromPrimitiveD(doc interface{}) (*T, *errors.Error) {
 	}
 	return result, nil
 }
+
+func GetEntity[T any](entity interface{}) (*T, *errors.Error) {
+	converter := Converter[T]{}
+	return converter.FromPrimitiveD(entity)
+}
+
+// GetListEntity 获取列表实体
+func GetListEntity[T any](docList any) (*[]T, *errors.Error) {
+	complexList := docList.(*[]Complex[any])
+	result := make([]T, 0, len(*complexList))
+	for _, doc := range *complexList {
+		entity, err := GetEntity[T](doc.Data)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *entity)
+	}
+
+	return &result, nil
+}

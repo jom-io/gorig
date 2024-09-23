@@ -16,6 +16,8 @@ import (
 //	m map[string]time.Time
 //}{m: make(map[string]time.Time)}
 
+var enable = true
+
 // NewShardedRequestMap 使用分片锁优化并发性能 分片锁原理：将数据通过哈希函数分散到多个分片中，每个分片独立加锁，减少锁的粒度，提高并发性能
 var srm = NewShardedRequestMap()
 
@@ -37,12 +39,22 @@ type shard struct {
 
 var whiteList = map[string]bool{}
 
-func DebouceAw(path string) {
-	whiteList[path] = true
+func DebouceAw(path ...string) {
+	for _, p := range path {
+		whiteList[p] = true
+	}
+}
+
+func DebounceDisable() {
+	enable = false
 }
 
 func Debounce(duration time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if !enable {
+			c.Next()
+			return
+		}
 		// 如果是白名单，直接跳过
 		//logger.Info(c, "Debounce", zap.Any("path", c.Request.URL.Path))
 		if _, ok := whiteList[c.Request.URL.Path]; ok {

@@ -14,13 +14,13 @@ import (
 	"strings"
 )
 
-var gormDBServ = &GormDBService{}
+var GormDBServ = &gormDBService{}
 
-type GormDBService struct {
+type gormDBService struct {
 }
 
 func init() {
-	RegisterDBService(Mysql, gormDBServ)
+	RegisterDBService(Mysql, GormDBServ)
 }
 
 var gormDbMysqlMap = make(map[string]*gorm.DB)
@@ -40,53 +40,7 @@ func UseDbConn(dbname string) *gorm.DB {
 	return gormDbMysqlMap[dbname]
 }
 
-func printSql(tag string, gormDB *gorm.DB) {
-	if !sys.RunMode.IsProd() {
-		logger.Info(nil, tag, zap.String("sql", gormDB.Dialector.Explain(gormDB.Statement.SQL.String(), gormDB.Statement.Vars...)))
-	}
-}
-
-func (c *Con) BeforeCreate(gormDB *gorm.DB) error {
-	//logger.Logger.Info("BeforeCreate")
-	c.DB = gormDB
-	// 此处可用于统一控制执行超时时间
-	//后续的代码就可以像普通业务 model 一样操作，
-	// b.Exec(sql,参数1，参数2，...)
-	//b.Raw(sql,参数1，参数2，...)
-	return nil
-}
-
-func (c *Con) AfterCreate(gormDB *gorm.DB) error {
-	printSql("AfterCreate", gormDB)
-	return nil
-}
-
-// BeforeUpdate BeforeUpdate、BeforeSave 函数都会因为 更新类的操作而被触发
-// 如果baseModel 和 普通业务 model 都想使用回调函数，那么请设置不同的回调函数名，例如：这里设置 BeforeUpdate、普通业务model 设置 BeforeSave 即可
-func (c *Con) BeforeUpdate(gormDB *gorm.DB) error {
-	//第一步必须反向将 gormDB 赋值给 b.DB
-	//logger.Logger.Info("BeforeUpdate")
-	c.DB = gormDB
-	//后续的代码就可以像普通业务 model 一样操作，
-	// b.Exec(sql,参数1，参数2，...)
-	//b.Raw(sql,参数1，参数2，...)
-	return nil
-}
-
-func (c *Con) AfterUpdate(gormDB *gorm.DB) error {
-	printSql("AfterUpdate", gormDB)
-	return nil
-}
-
-func (*Con) HandleError(tx *gorm.DB) (err *errors.Error) {
-	if tx.Error != nil {
-		err = errors.Sys("数据库操作失败", tx.Error)
-		return err
-	}
-	return nil
-}
-
-func (*GormDBService) start() error {
+func (*gormDBService) Start() error {
 	sys.Info(" * DB service startup on: ", Mysql)
 	sub := configure.GetSub("Mysql")
 	if len(sub) > 0 {
@@ -101,11 +55,7 @@ func (*GormDBService) start() error {
 	return nil
 }
 
-func (s *GormDBService) Start() error {
-	return s.start()
-}
-
-func (*GormDBService) migrate(con *Con, tableName string, value ConTable, indexList []Index) error {
+func (*gormDBService) Migrate(con *Con, tableName string, value ConTable, indexList []Index) error {
 	if con.DB == nil {
 		return errors.Sys("Migrate: db is nil")
 	}
@@ -153,7 +103,7 @@ func (*GormDBService) migrate(con *Con, tableName string, value ConTable, indexL
 	return nil
 }
 
-func (*GormDBService) end() error {
+func (*gormDBService) End() error {
 	// 关闭数据库连接 删除数据库连接
 	for k, _ := range gormDbMysqlMap {
 		delete(gormDbMysqlMap, k)
@@ -175,18 +125,19 @@ func initMysqlDB(dbname ...string) {
 	}
 }
 
-func (s *GormDBService) GetByID(c *Con, id int64, result interface{}) error {
+func (s *gormDBService) GetByID(c *Con, id int64, result interface{}) error {
 	if c.DB == nil {
 		return fmt.Errorf("get db is nil")
 	}
-	if err := c.DB.Table(c.TableName()).First(result, id).Error; err != nil {
+	//result = make(map[string]interface{})
+	if err := c.DB.Table(c.TableName()).Where("id = ?", id).First(result).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *GormDBService) Save(c *Con, data load.Identifiable, newID int64) (id int64, err error) {
-	if c.ID == 0 && newID > 0 {
+func (s *gormDBService) Save(c *Con, data Identifiable, newID int64) (id int64, err error) {
+	if c.GetID().IsNil() && newID != 0 {
 		c.ID = newID
 	}
 
@@ -194,17 +145,17 @@ func (s *GormDBService) Save(c *Con, data load.Identifiable, newID int64) (id in
 	if tx.Error != nil {
 		return 0, tx.Error
 	}
-	return data.GetID(), nil
+	return data.GetID().Int64(), nil
 }
 
-func (s *GormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {
+func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {
 	if err := c.DB.Table(c.TableName()).Where("id = ?", id).Updates(data).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *GormDBService) Delete(c *Con, id int64) error {
+func (s *gormDBService) Delete(c *Con, id int64) error {
 	if err := c.DB.Table(c.TableName()).Delete(id).Error; err != nil {
 		return err
 	}
@@ -239,7 +190,7 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 	}
 }
 
-func (s *GormDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
+func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	if err := tx.Limit(1000).Find(result).Error; err != nil {
@@ -248,7 +199,7 @@ func (s *GormDBService) FindByMatch(c *Con, matchList []Match, result interface{
 	return tx.Error
 }
 
-func (s *GormDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
+func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	if err := tx.First(result).Error; err != nil {
@@ -257,7 +208,7 @@ func (s *GormDBService) GetByMatch(c *Con, matchList []Match, result interface{}
 	return tx.Error
 }
 
-func (s *GormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
+func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	var count int64
@@ -267,10 +218,11 @@ func (s *GormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	return count, nil
 }
 
-func (s *GormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, pageResp *load.PageResp, result interface{}, prefixes ...string) error {
+func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
-	if err := tx.Count(&pageResp.Total).Error; err != nil {
+	count := int64(0)
+	if err := tx.Count(&count).Error; err != nil {
 		return err
 	}
 	if page.LastID > 0 {
@@ -278,6 +230,6 @@ func (s *GormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Pa
 	} else {
 		tx = tx.Order("id desc").Limit(int(page.Size)).Offset(int(page.Offset())).Find(result)
 	}
-
+	total.Set(count)
 	return tx.Error
 }

@@ -21,12 +21,12 @@ type serviceInfo struct {
 func (s *serviceInfo) Start(code, port string) error {
 	var err error
 	s.dbService.Range(func(key, value interface{}) bool {
-		err = value.(DBService).start()
+		err = value.(DBService).Start()
 		return true
 	})
 	go func() {
 		time.Sleep(1 * time.Second)
-		for _, m := range migrationList {
+		for _, m := range MigrationList {
 			if err = s.Migrate(m); err != nil {
 				sys.Exit(errors.Sys(fmt.Sprintf("Migration failed: %v", err.Error())))
 			}
@@ -38,14 +38,17 @@ func (s *serviceInfo) Start(code, port string) error {
 func (s *serviceInfo) End(code string, ctx context.Context) error {
 	var err error
 	s.dbService.Range(func(key, value interface{}) bool {
-		err = value.(DBService).end()
+		err = value.(DBService).End()
 		return true
 	})
 	return err
 }
 
-func (s *serviceInfo) Migrate(m *migration) error {
+func (s *serviceInfo) Migrate(m *Migration) error {
 	value := m.DBFunc()
+	if value == nil {
+		return nil
+	}
 	con := value.GetCon()
 	if con == nil {
 		return fmt.Errorf("AutoMigrate db is nil, %v", value)
@@ -65,23 +68,23 @@ func (s *serviceInfo) Migrate(m *migration) error {
 		}
 	}()
 	go func() {
-		err = GetDBService(con.GetConType()).migrate(con, tableName, value, m.Index)
+		err = GetDBService(con.GetConType()).Migrate(con, tableName, value, m.Index)
 	}()
 	return nil
 }
 
 type DBService interface {
-	start() error
-	end() error
-	migrate(con *Con, tableName string, value ConTable, indexList []Index) error
+	Start() error
+	End() error
+	Migrate(con *Con, tableName string, value ConTable, indexList []Index) error
 	GetByID(c *Con, id int64, result interface{}) error
-	Save(c *Con, data load.Identifiable, newID int64) (id int64, error error)
+	Save(c *Con, data Identifiable, newID int64) (id int64, error error)
 	UpdatePart(c *Con, id int64, data map[string]interface{}) error
 	Delete(c *Con, id int64) error
 	FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error
 	GetByMatch(c *Con, matchList []Match, result interface{}) error
 	CountByMatch(c *Con, matchList []Match) (int64, error)
-	FindByPageMatch(c *Con, matchList []Match, page *load.Page, pageResp *load.PageResp, result interface{}, prefixes ...string) error
+	FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error
 }
 
 func RegisterDBService(conType ConType, s DBService) {

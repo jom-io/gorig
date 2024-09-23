@@ -18,13 +18,13 @@ import (
 	"time"
 )
 
-var mongoDBServ = &mongoDBService{}
+var MongoDBServ = &mongoDBService{}
 
 type mongoDBService struct {
 }
 
 func init() {
-	RegisterDBService(Mongo, mongoDBServ)
+	RegisterDBService(Mongo, MongoDBServ)
 }
 
 const configName = "mongo"
@@ -44,7 +44,7 @@ func UseMongoDbConn(dbname string) *qmgo.Client {
 	return qmMDBMap[dbname]
 }
 
-func (*mongoDBService) start() error {
+func (*mongoDBService) Start() error {
 	sys.Info(" * DB Mongo service startup on: ", Mongo)
 	sub := configure.GetSub(configName)
 	if len(sub) > 0 {
@@ -60,11 +60,24 @@ func (*mongoDBService) start() error {
 	return nil
 }
 
-func (s *mongoDBService) migrate(con *Con, tableName string, value ConTable, indexList []Index) error {
+func getColl(c *Con) (*qmgo.Collection, *errors.Error) {
+	mDb := c.MDB
+	gDdb, e := ddbCon(mDb, c.DBName)
+	if e != nil {
+		return nil, e
+	}
+	gColl, e := collCon(gDdb, c.TableName())
+	if e != nil {
+		return nil, e
+	}
+	return gColl, nil
+}
+
+func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, indexList []Index) error {
 	if con.MDB == nil {
 		return errors.Sys("Migrate: mdb is nil")
 	}
-	if coll, e := con.getColl(); e != nil {
+	if coll, e := getColl(con); e != nil {
 		return e
 	} else {
 		for _, index := range indexList {
@@ -86,7 +99,7 @@ func (s *mongoDBService) migrate(con *Con, tableName string, value ConTable, ind
 	return nil
 }
 
-func (*mongoDBService) end() error {
+func (*mongoDBService) End() error {
 	for k, client := range qmMDBMap {
 		if err := client.Close(context.Background()); err != nil {
 			logger.Logger.Error("close mongo.Client failed", zap.Error(err))
@@ -176,21 +189,8 @@ func collCon(database *qmgo.Database, collection string) (*qmgo.Collection, *err
 	return c, nil
 }
 
-func (c *Con) getColl() (*qmgo.Collection, *errors.Error) {
-	mDb := c.MDB
-	gDdb, e := ddbCon(mDb, c.DBName)
-	if e != nil {
-		return nil, e
-	}
-	gColl, e := collCon(gDdb, c.TableName())
-	if e != nil {
-		return nil, e
-	}
-	return gColl, nil
-}
-
 func (s *mongoDBService) GetByID(c *Con, id int64, result interface{}) error {
-	gColl, e := c.getColl()
+	gColl, e := getColl(c)
 	if e != nil {
 		return e
 	}
@@ -200,11 +200,12 @@ func (s *mongoDBService) GetByID(c *Con, id int64, result interface{}) error {
 	return nil
 }
 
-func (s *mongoDBService) Save(c *Con, data load.Identifiable, newID int64) (id int64, error error) {
-	if coll, e := c.getColl(); e != nil {
+func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64) (id int64, error error) {
+	if coll, e := getColl(c); e != nil {
 		return 0, e
 	} else {
-		if c.ID > 0 {
+		if c.GetID().NotNil() {
+			c.SaveUpdateTime()
 			mErr := coll.UpdateOne(context.Background(), bson.M{"con.id": c.ID}, bson.M{"$set": data})
 			if mErr != nil {
 				return 0, mErr
@@ -215,7 +216,13 @@ func (s *mongoDBService) Save(c *Con, data load.Identifiable, newID int64) (id i
 			if newID > 0 {
 				c.ID = newID
 			} else {
-				c.GenerateSetID()
+				c.ID = c.GetID().Generate()
+			}
+			if c.SaveCreateTime != nil {
+				c.SaveCreateTime()
+			}
+			if c.SaveUpdateTime != nil {
+				c.SaveUpdateTime()
 			}
 			one, mErr := coll.InsertOne(context.Background(), data)
 			if mErr != nil {
@@ -230,16 +237,18 @@ func (s *mongoDBService) Save(c *Con, data load.Identifiable, newID int64) (id i
 }
 
 func (s *mongoDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {
-	if coll, e := c.getColl(); e != nil {
+	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
+		m := mapToBsonM(data)
+		m["options.updateTime"] = time.Now()
 		mErr := coll.UpdateOne(context.Background(), bson.M{"con.id": id}, bson.M{"$set": mapToBsonM(data)})
 		return mErr
 	}
 }
 
 func (s *mongoDBService) Delete(c *Con, id int64) error {
-	if coll, e := c.getColl(); e != nil {
+	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
 		mErr := coll.Remove(context.Background(), bson.M{"con.id": id})
@@ -263,10 +272,10 @@ func mapToBsonM(m map[string]interface{}, prefixes ...string) bson.M {
 	return bm
 }
 
-func sortMongoFields(s *[]*Sort) []string {
+func sortMongoFields(s []*Sort) []string {
 	sortList := make([]string, 0)
 	if s != nil {
-		for _, v := range *s {
+		for _, v := range s {
 			order := ""
 			if !v.Asc {
 				order = "-"
@@ -314,27 +323,27 @@ func matchMongoCond(matchList []Match) map[string]interface{} {
 }
 func (s *mongoDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
 	condition := matchMongoCond(matchList)
-	if coll, e := c.getColl(); e != nil {
+	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.gSort)...).Limit(1000).All(result)
+		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(1000).All(result)
 		return mErr
 	}
 }
 
 func (s *mongoDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
 	condition := matchMongoCond(matchList)
-	if coll, e := c.getColl(); e != nil {
+	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(context.Background(), mapToBsonM(condition)).One(result)
+		mErr := coll.Find(context.Background(), mapToBsonM(condition)).Sort(sortMongoFields(c.Sort)...).One(result)
 		return mErr
 	}
 }
 
 func (s *mongoDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	condition := matchMongoCond(matchList)
-	if coll, e := c.getColl(); e != nil {
+	if coll, e := getColl(c); e != nil {
 		return 0, e
 	} else {
 		count, mErr := coll.Find(context.Background(), mapToBsonM(condition)).Count()
@@ -345,25 +354,26 @@ func (s *mongoDBService) CountByMatch(c *Con, matchList []Match) (int64, error) 
 	}
 }
 
-func (s *mongoDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, pageResp *load.PageResp, result interface{}, prefixes ...string) error {
-	if coll, e := c.getColl(); e != nil {
+func (s *mongoDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
+	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
 		condition := matchMongoCond(matchList)
 		var mErr error
+		var count int64
 		if page.LastID > 0 {
 			m := mapToBsonM(condition, prefixes...)
 			m["con.id"] = bson.M{"$lt": page.LastID}
-			pageResp.Total, _ = coll.Find(context.Background(), m).Count()
-			mErr = coll.Find(context.Background(), m).Sort(sortMongoFields(c.gSort)...).Limit(page.Size).All(result)
+			count, _ = coll.Find(context.Background(), m).Count()
+			mErr = coll.Find(context.Background(), m).Sort(sortMongoFields(c.Sort)...).Limit(page.Size).All(result)
 		} else {
 			bsonM := mapToBsonM(condition, prefixes...)
-			pageResp.Total, _ = coll.Find(context.Background(), bsonM).Count()
+			count, _ = coll.Find(context.Background(), bsonM).Count()
 			skip := (page.Page - 1) * page.Size
-			mErr = coll.Find(context.Background(), bsonM).Sort(sortMongoFields(c.gSort)...).Skip(skip).Limit(page.Size).All(result)
+			mErr = coll.Find(context.Background(), bsonM).Sort(sortMongoFields(c.Sort)...).Skip(skip).Limit(page.Size).All(result)
 		}
+		total.Set(count)
 		if mErr != nil {
-			pageResp.Total = 0
 			return mErr
 		}
 		return nil
