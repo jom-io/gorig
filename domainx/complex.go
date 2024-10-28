@@ -36,9 +36,9 @@ func (c *Complex[T]) TableName() string {
 	return ""
 }
 
-func (c *Complex[T]) GetID() *ID {
-	if c == nil {
-		return new(ID)
+func (c *Complex[T]) GetID() ID {
+	if c == nil || c.Con == nil {
+		return ID(0)
 	}
 	return c.Con.GetID()
 }

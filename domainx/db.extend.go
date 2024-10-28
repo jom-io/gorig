@@ -1,6 +1,7 @@
 package domainx
 
 import (
+	"fmt"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
@@ -48,7 +49,7 @@ func (c *Con) AfterUpdate(gormDB *gorm.DB) error {
 
 func (*Con) HandleError(tx *gorm.DB) (err *errors.Error) {
 	if tx.Error != nil {
-		err = errors.Sys("数据库操作失败", tx.Error)
+		err = errors.Sys(fmt.Sprintf("数据库操作失败: %v", tx.Error))
 		return err
 	}
 	return nil

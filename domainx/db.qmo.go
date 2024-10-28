@@ -86,6 +86,12 @@ func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, ind
 				unique = new(bool)
 				*unique = true
 			}
+			// 如果不是con或者options开头的字段，需要加上data.
+			if index.Fields[0] != "con" && index.Fields[0] != "options" {
+				for i, v := range index.Fields {
+					index.Fields[i] = "data." + v
+				}
+			}
 			if err := coll.CreateIndexes(context.Background(), []qoptions.IndexModel{{
 				Key: index.Fields,
 				IndexOptions: &options.IndexOptions{
@@ -216,7 +222,7 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64) (id int64,
 			if newID > 0 {
 				c.ID = newID
 			} else {
-				c.ID = c.GetID().Generate()
+				c.ID = c.GetID().GenerateID()
 			}
 			if c.SaveCreateTime != nil {
 				c.SaveCreateTime()
@@ -326,7 +332,7 @@ func (s *mongoDBService) FindByMatch(c *Con, matchList []Match, result interface
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(1000).All(result)
+		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(10000).All(result)
 		return mErr
 	}
 }

@@ -176,6 +176,7 @@ func ValidatorError(c *gin.Context, err error) {
 	//	ReturnJson(c, http.StatusBadRequest, consts.ValidatorParamsCheckFailCode, consts.ValidatorParamsCheckFailMsg, &myInterface)
 	//} else {
 	var tips interface{} = err.Error()
+	logger.Error(c, err.Error())
 	ReturnJson(c, http.StatusBadRequest, consts.ValidatorParamsCheckFailCode, consts.ValidatorParamsCheckFailMsg, &tips)
 	//}
 	c.Abort()

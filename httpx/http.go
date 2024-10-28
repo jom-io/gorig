@@ -12,7 +12,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
+
+var client = &http.Client{}
 
 func Get(baseURL string, params map[string]string) (resp string, err *errors.Error) {
 	// 拼接参数
@@ -122,7 +125,7 @@ func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.
 	}
 	logger.Info(nil, fmt.Sprintf("PostJSONResp: %s, %s", baseURL, jsonData))
 	// 发起Post请求
-	response, httpErr := http.Post(baseURL, "application/json", bytes.NewReader(jsonData))
+	response, httpErr := client.Post(baseURL, "application/json", bytes.NewReader(jsonData))
 	if httpErr != nil { // 注意这里的错误检查修正
 		return "", errors.Sys(fmt.Sprintf("http.Post error: %v", httpErr))
 	}
@@ -134,7 +137,7 @@ func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.
 		return "", errors.Sys(fmt.Sprintf("io.ReadAll error: %v", readErr))
 	}
 	strBody := string(body)
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
 		return strBody, errors.Sys(fmt.Sprintf("http.Post status:%v error: %v", response.StatusCode, string(body)))
 	}
 	return strBody, nil
@@ -257,4 +260,9 @@ func ParseXML[T any](xmlStr string) (*T, *errors.Error) {
 		panic(err)
 	}
 	return &result, nil
+}
+
+func init() {
+	// 设置请求超时时间 30s
+	client.Timeout = 120 * time.Second
 }

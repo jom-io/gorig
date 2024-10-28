@@ -7,10 +7,10 @@ import (
 
 type ID int64
 
-func (i *ID) GenerateID() int64 {
-	if i == nil {
-		i = new(ID)
-	}
+func (i ID) GenerateID() int64 {
+	//if i == nil {
+	//	i = new(ID)
+	//}
 	// 创建一个新的随机数生成器，使用当前时间戳作为种子
 	randSource := rand.NewSource(time.Now().UnixNano())
 	rnd := rand.New(randSource)
@@ -23,53 +23,42 @@ func (i *ID) GenerateID() int64 {
 	return result
 }
 
-func (i *ID) New() {
-	i = new(ID)
+func (i ID) New() *ID {
+	return new(ID)
 }
 
-func (i *ID) Reset() {
-	if i == nil {
-		i = new(ID)
-	}
-	i.SetID(0)
+func (i ID) Reset() {
+	i = 0
 }
 
-func (i *ID) Generate() int64 {
-	i.SetID(i.GenerateID())
-	return i.Int64()
+func (i ID) SetID(id int64) {
+	i = ID(id)
 }
 
-func (i *ID) SetID(id int64) {
-	if i == nil {
-		i = new(ID)
-	} else {
-		*i = ID(id)
-	}
+func (i ID) GetID() ID {
+	return i
 }
 
-func (i *ID) Int64() int64 {
-	if i == nil {
-		return 0
-	}
-	return int64(*i)
+func (i ID) Int64() int64 {
+	return int64(i)
 }
 
-func (i *ID) IsNil() bool {
-	return i == nil || i.IsZero()
+func (i ID) IsNil() bool {
+	return i.IsZero()
 }
 
-func (i *ID) IsZero() bool {
-	return i != nil && i.Int64() == 0
+func (i ID) IsZero() bool {
+	return i.Int64() == 0
 }
 
-func (i *ID) NotNil() bool {
+func (i ID) NotNil() bool {
 	return !i.IsZero()
 }
 
-func (i *ID) NotZero() bool {
-	return i != nil && i.Int64() != 0
+func (i ID) NotZero() bool {
+	return !i.IsZero()
 }
 
-func (i *ID) Equal(id int64) bool {
+func (i ID) Equal(id int64) bool {
 	return i.Int64() == id
 }
