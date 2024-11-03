@@ -11,9 +11,9 @@ import (
 //}
 
 // GetByID 获取单条记录
-func (c *Con) GetByID(id int64) (err *errors.Error) {
-	return GetByID(c, id, c)
-}
+//func (c *Con) GetByID(id int64) (err *errors.Error) {
+//	return GetByID(c, id, c)
+//}
 
 //// MustGetByID 获取单条记录
 //func (c *Con) MustGetByID(id int64) *errors.Error {
@@ -36,8 +36,8 @@ func (c *Con) Delete(id int64) *errors.Error {
 }
 
 // GetByField 根据字段名称和值查询单条记录
-func (c *Con) GetByField(fieldName string, value interface{}, result *Identifiable) (err *errors.Error) {
-	return GetByField(c, fieldName, value, result)
+func (c *Con) GetByField(fieldName string, value interface{}, result Identifiable) (err *errors.Error) {
+	return GetByField(c, fieldName, value, &result)
 }
 
 // GetByCondition 根据条件查询单条记录

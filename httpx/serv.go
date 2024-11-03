@@ -19,10 +19,10 @@ func Startup(code, port string) error {
 	gHttpServer = &http.Server{
 		Addr:              port,
 		Handler:           gEngine,
-		ReadTimeout:       10 * time.Second,
-		ReadHeaderTimeout: 10 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       30 * time.Second,
+		ReadTimeout:       10 * time.Second,  // 读取超时
+		ReadHeaderTimeout: 10 * time.Second,  // 读取头部超时
+		WriteTimeout:      120 * time.Second, // 写入超时
+		IdleTimeout:       120 * time.Second, // 空闲超时
 	}
 	sys.Info(" * Rest service startup on: ", gHttpServer.Addr)
 	go func() {

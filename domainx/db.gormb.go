@@ -156,7 +156,7 @@ func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}
 }
 
 func (s *gormDBService) Delete(c *Con, id int64) error {
-	if err := c.DB.Table(c.TableName()).Delete(id).Error; err != nil {
+	if err := c.DB.Table(c.TableName()).Where("id = ?", id).Delete(nil).Error; err != nil {
 		return err
 	}
 	return nil
@@ -184,6 +184,13 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 			tx = tx.Where(match.Field+" in (?)", match.Value)
 		case MNOTIN:
 			tx = tx.Where(match.Field+" not in (?)", match.Value)
+		case Near:
+			near := match.ToNearMatch()
+			tx = tx.Select("*, (6371 * acos(cos(radians(?)) * cos(radians("+near.LatField+")) * cos(radians("+near.LngField+") - radians(?)) + sin(radians(?)) * sin(radians("+near.LatField+")))) AS distance", near.Lat, near.Lng, near.Lat)
+			if near.Distance > 0 {
+				tx = tx.Where("6371 * acos(cos(radians(?)) * cos(radians("+near.LatField+")) * cos(radians("+near.LngField+") - radians(?)) + sin(radians(?)) * sin(radians("+near.LatField+"))) < ?", near.Lat, near.Lng, near.Lat, near.Distance)
+			}
+			tx = tx.Order("distance")
 		default:
 			tx = tx.Where(match.Field+" = ?", match.Value)
 		}

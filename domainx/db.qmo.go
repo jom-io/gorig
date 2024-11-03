@@ -12,6 +12,7 @@ import (
 	"github.com/qiniu/qmgo"
 	qoptions "github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"strings"
@@ -86,6 +87,28 @@ func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, ind
 				unique = new(bool)
 				*unique = true
 			}
+			// 如果不是con或者options开头的字段，需要加上data.
+			if index.Fields[0] != "con" && index.Fields[0] != "options" {
+				for i, v := range index.Fields {
+					index.Fields[i] = "data." + v
+				}
+			}
+
+			if index.IdxType == Spatial2D {
+				mColl, err := coll.CloneCollection()
+				if err != nil {
+					return err
+				}
+				if _, err = mColl.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+					Keys: bson.D{
+						{Key: index.Fields[0], Value: "2dsphere"},
+					},
+				}); err != nil {
+					return err
+				}
+				continue
+			}
+
 			if err := coll.CreateIndexes(context.Background(), []qoptions.IndexModel{{
 				Key: index.Fields,
 				IndexOptions: &options.IndexOptions{
@@ -216,7 +239,7 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64) (id int64,
 			if newID > 0 {
 				c.ID = newID
 			} else {
-				c.ID = c.GetID().Generate()
+				c.ID = c.GetID().GenerateID()
 			}
 			if c.SaveCreateTime != nil {
 				c.SaveCreateTime()
@@ -267,7 +290,12 @@ func mapToBsonM(m map[string]interface{}, prefixes ...string) bson.M {
 	}
 	bm := bson.M{}
 	for k, v := range m {
-		bm[prefix+k] = v
+		key := prefix + k
+		// 最后最后一个字符是.的话，去掉
+		if strings.HasSuffix(key, ".") {
+			key = key[:len(key)-1]
+		}
+		bm[key] = v
 	}
 	return bm
 }
@@ -315,6 +343,20 @@ func matchMongoCond(matchList []Match) map[string]interface{} {
 			condition[match.Field] = bson.M{"$in": match.Value}
 		case MNOTIN:
 			condition[match.Field] = bson.M{"$nin": match.Value}
+		case NearLoc:
+			near := match.ToNearMatch()
+			if near.Distance == 0 {
+				near.Distance = 5000 * 1000
+			}
+			condition[match.Field] = bson.M{
+				"$near": bson.M{
+					"$geometry": bson.M{
+						"type":        "Point",
+						"coordinates": []float64{near.Lng, near.Lat},
+					},
+					"$maxDistance": near.Distance,
+				},
+			}
 		default:
 			condition[match.Field] = match.Value
 		}
@@ -326,7 +368,7 @@ func (s *mongoDBService) FindByMatch(c *Con, matchList []Match, result interface
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(1000).All(result)
+		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(10000).All(result)
 		return mErr
 	}
 }

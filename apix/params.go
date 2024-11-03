@@ -278,11 +278,12 @@ func getParamItem(ctx *gin.Context, key string, force Forcible, defValue ...stri
 		reqErr := errors.Verify("GetParam: req is nil")
 		if force {
 			response.ValidatorError(ctx, reqErr)
+			return "", reqErr
 		}
 		if len(defValue) > 0 {
 			return defValue[0], nil
 		}
-		return "", reqErr
+		return "", nil
 	}
 	errText := fmt.Sprintf("param: %s", key)
 	defaultStr := ""

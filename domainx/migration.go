@@ -3,8 +3,9 @@ package domainx
 type IdxType string
 
 const (
-	Unique IdxType = "unique"
-	Idx    IdxType = "idx"
+	Unique    IdxType = "unique"
+	Idx       IdxType = "idx"
+	Spatial2D IdxType = "2d"
 )
 
 type Index struct {

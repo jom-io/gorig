@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -78,17 +79,24 @@ func GetDuration(key string, def ...time.Duration) time.Duration {
 	return 0
 }
 
-var gConfigs = make(map[string]any)
+// var gConfigs = make(map[string]any)
+// 改为sync.Map
+var gConfigs = sync.Map{}
 
 func register(key string, val any) {
-	gConfigs[key] = val
+	//gConfigs[key] = val
+	gConfigs.Store(key, val)
 }
 
 // Dump Used to output all used configurations
 func Dump(call func(key string, val any)) {
-	for k, v := range gConfigs {
-		call(k, v)
-	}
+	//for k, v := range gConfigs {
+	//	call(k, v)
+	//}
+	gConfigs.Range(func(key, value any) bool {
+		call(key.(string), value)
+		return true
+	})
 }
 
 func exists(key string) bool {

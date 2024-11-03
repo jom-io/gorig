@@ -1,6 +1,7 @@
 package domainx
 
 import (
+	"github.com/jom-io/gorig/global/variable"
 	"gorm.io/gorm"
 	"time"
 )
@@ -36,9 +37,9 @@ func (c *Complex[T]) TableName() string {
 	return ""
 }
 
-func (c *Complex[T]) GetID() *ID {
-	if c == nil {
-		return new(ID)
+func (c *Complex[T]) GetID() ID {
+	if c == nil || c.Con == nil {
+		return ID(0)
 	}
 	return c.Con.GetID()
 }
@@ -47,7 +48,14 @@ func (c *Complex[T]) IsNil() bool {
 	return c == nil || c.Con == nil || c.GetID().IsNil()
 }
 
-func UseComplex[T any](conType ConType, dbName string, table string) *Complex[T] {
+func UseComplex[T any](conType ConType, dbName string, table string, prefix ...string) *Complex[T] {
+	if len(prefix) > 0 {
+		for i := range prefix {
+			table = prefix[i] + table
+		}
+	} else if variable.TBPrefix != "" {
+		table = variable.TBPrefix + table
+	}
 	c := Complex[T]{Con: UseCon(conType, dbName, table)}
 	c.Con.SaveCreateTime = func() {
 		c.SaveCreate()

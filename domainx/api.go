@@ -1,6 +1,7 @@
 package domainx
 
 import (
+	"fmt"
 	"github.com/jom-io/gorig/apix/load"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
@@ -62,12 +63,12 @@ func AutoMigrate(getDB func() (value ConTable), index ...Index) {
 	MigrationList = append(MigrationList, mInfo)
 }
 
-func (*Con) HandleWithErr(err error) (error *errors.Error) {
+func (c *Con) HandleWithErr(err error) (error *errors.Error) {
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
 			return nil
 		}
-		error = errors.Sys("数据库操作失败", err)
+		error = errors.Sys(fmt.Sprintf("%s数据库操作失败: %s", c.TableName(), err.Error()))
 		return error
 	}
 	return nil
@@ -124,7 +125,7 @@ func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *er
 	}
 
 	dbService := GetDBService(c.GetConType())
-	if data.GetID().IsNil() {
+	if !data.GetID().IsNil() {
 		c.ID = data.GetID().Int64()
 	}
 

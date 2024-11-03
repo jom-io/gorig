@@ -5,16 +5,18 @@ import "github.com/spf13/cast"
 type MatchType string
 
 const (
-	MEq    MatchType = "="
-	MEqr   MatchType = "="
-	MLt    MatchType = "<"
-	MLte   MatchType = "<="
-	MGt    MatchType = ">"
-	MGte   MatchType = ">="
-	MNE    MatchType = "!="
-	MLIKE  MatchType = "like"
-	MIN    MatchType = "in"
-	MNOTIN MatchType = "not in"
+	MEq     MatchType = "="
+	MEqr    MatchType = "="
+	MLt     MatchType = "<"
+	MLte    MatchType = "<="
+	MGt     MatchType = ">"
+	MGte    MatchType = ">="
+	MNE     MatchType = "!="
+	MLIKE   MatchType = "like"
+	MIN     MatchType = "in"
+	MNOTIN  MatchType = "not in"
+	Near    MatchType = "near"
+	NearLoc MatchType = "nearloc"
 )
 
 type Match struct {
@@ -23,7 +25,23 @@ type Match struct {
 	Type  MatchType
 }
 
+type NearMatch struct {
+	LatField string
+	LngField string
+	Lat      float64
+	Lng      float64
+	Distance float64
+}
+
 type Matches []Match
+
+func NewMatches() *Matches {
+	return &Matches{}
+}
+
+func (h *Match) ToNearMatch() NearMatch {
+	return h.Value.(NearMatch)
+}
 
 func (m *Matches) Add(field string, value interface{}, t MatchType, ignore ...bool) *Matches {
 	if value == nil {
@@ -95,6 +113,24 @@ func (m *Matches) In(field string, value interface{}, ignore ...bool) *Matches {
 
 func (m *Matches) NotIn(field string, value interface{}, ignore ...bool) *Matches {
 	return m.Add(field, value, MNOTIN, ignore...)
+}
+
+func (m *Matches) Near(latFiled, lngFiled string, lat, lng, distance float64) *Matches {
+	return m.Add("near", NearMatch{
+		LatField: latFiled,
+		LngField: lngFiled,
+		Lat:      lat,
+		Lng:      lng,
+		Distance: distance,
+	}, Near)
+}
+
+func (m *Matches) NearLoc(localField string, lat, lng, distance float64) *Matches {
+	return m.Add(localField, NearMatch{
+		Lat:      lat,
+		Lng:      lng,
+		Distance: distance,
+	}, NearLoc)
 }
 
 func (m *Matches) AddMatch(match *Match) *Matches {

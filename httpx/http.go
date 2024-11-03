@@ -134,7 +134,7 @@ func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.
 		return "", errors.Sys(fmt.Sprintf("io.ReadAll error: %v", readErr))
 	}
 	strBody := string(body)
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
 		return strBody, errors.Sys(fmt.Sprintf("http.Post status:%v error: %v", response.StatusCode, string(body)))
 	}
 	return strBody, nil

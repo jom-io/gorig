@@ -38,6 +38,13 @@ func (t *Total) Set(total int64) {
 	*t = Total(total)
 }
 
+func (t *Total) Get() int64 {
+	if t == nil {
+		return 0
+	}
+	return int64(*t)
+}
+
 func (p *Page) Offset() int64 {
 	return (p.Page - 1) * p.Size
 }
