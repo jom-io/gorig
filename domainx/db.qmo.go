@@ -93,7 +93,6 @@ func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, ind
 					index.Fields[i] = "data." + v
 				}
 			}
-
 			if index.IdxType == Spatial2D {
 				mColl, err := coll.CloneCollection()
 				if err != nil {
@@ -108,7 +107,6 @@ func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, ind
 				}
 				continue
 			}
-
 			if err := coll.CreateIndexes(context.Background(), []qoptions.IndexModel{{
 				Key: index.Fields,
 				IndexOptions: &options.IndexOptions{

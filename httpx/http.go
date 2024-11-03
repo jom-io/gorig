@@ -12,7 +12,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
+
+var client = &http.Client{}
 
 func Get(baseURL string, params map[string]string) (resp string, err *errors.Error) {
 	// 拼接参数
@@ -122,7 +125,7 @@ func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.
 	}
 	logger.Info(nil, fmt.Sprintf("PostJSONResp: %s, %s", baseURL, jsonData))
 	// 发起Post请求
-	response, httpErr := http.Post(baseURL, "application/json", bytes.NewReader(jsonData))
+	response, httpErr := client.Post(baseURL, "application/json", bytes.NewReader(jsonData))
 	if httpErr != nil { // 注意这里的错误检查修正
 		return "", errors.Sys(fmt.Sprintf("http.Post error: %v", httpErr))
 	}
@@ -257,4 +260,9 @@ func ParseXML[T any](xmlStr string) (*T, *errors.Error) {
 		panic(err)
 	}
 	return &result, nil
+}
+
+func init() {
+	// 设置请求超时时间 30s
+	client.Timeout = 120 * time.Second
 }
