@@ -142,14 +142,14 @@ func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *er
 }
 
 // Delete 删除
-func Delete(c *Con, id int64) *errors.Error {
+func Delete(c *Con, data Identifiable) *errors.Error {
 	if c == nil {
 		return errors.Sys("con not init")
 	}
 
 	dbService := GetDBService(c.GetConType())
 
-	gErr := dbService.Delete(c, id)
+	gErr := dbService.Delete(c, data)
 	if gErr != nil {
 		return c.HandleWithErr(gErr)
 	}

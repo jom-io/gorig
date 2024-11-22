@@ -17,6 +17,7 @@ const (
 	MNOTIN  MatchType = "not in"
 	Near    MatchType = "near"
 	NearLoc MatchType = "nearloc"
+	MNEmpty MatchType = "not empty"
 )
 
 type Match struct {
@@ -113,6 +114,10 @@ func (m *Matches) In(field string, value interface{}, ignore ...bool) *Matches {
 
 func (m *Matches) NotIn(field string, value interface{}, ignore ...bool) *Matches {
 	return m.Add(field, value, MNOTIN, ignore...)
+}
+
+func (m *Matches) NEmpty(field string) *Matches {
+	return m.Add(field, "", MNEmpty, true)
 }
 
 func (m *Matches) Near(latFiled, lngFiled string, lat, lng, distance float64) *Matches {

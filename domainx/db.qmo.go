@@ -268,11 +268,11 @@ func (s *mongoDBService) UpdatePart(c *Con, id int64, data map[string]interface{
 	}
 }
 
-func (s *mongoDBService) Delete(c *Con, id int64) error {
+func (s *mongoDBService) Delete(c *Con, data Identifiable) error {
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Remove(context.Background(), bson.M{"con.id": id})
+		mErr := coll.Remove(context.Background(), bson.M{"con.id": data.GetID()})
 		return mErr
 	}
 }
@@ -321,7 +321,6 @@ func sortMongoFields(s []*Sort) []string {
 func matchMongoCond(matchList []Match) map[string]interface{} {
 	condition := make(map[string]interface{}, len(matchList))
 	for _, match := range matchList {
-		// matchStage := bson.D{{"$match", []bson.E{{"weight", bson.D{{"$gt", 30}}}}}}
 		switch match.Type {
 		case MEq:
 			condition[match.Field] = match.Value
@@ -341,6 +340,8 @@ func matchMongoCond(matchList []Match) map[string]interface{} {
 			condition[match.Field] = bson.M{"$in": match.Value}
 		case MNOTIN:
 			condition[match.Field] = bson.M{"$nin": match.Value}
+		case MNEmpty:
+			condition[match.Field] = bson.M{"$exists": true, "$not": bson.M{"$size": 0}}
 		case NearLoc:
 			near := match.ToNearMatch()
 			if near.Distance == 0 {

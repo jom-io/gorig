@@ -31,8 +31,8 @@ func (c *Con) SaveOrUpdate(data Identifiable, newIDs ...int64) (id int64, err *e
 }
 
 // Delete 删除
-func (c *Con) Delete(id int64) *errors.Error {
-	return Delete(c, id)
+func (c *Con) Delete(data Identifiable) *errors.Error {
+	return Delete(c, data)
 }
 
 // GetByField 根据字段名称和值查询单条记录

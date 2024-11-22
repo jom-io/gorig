@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -25,6 +26,14 @@ const (
 	NotForce Forcible = false
 )
 
+type ParamType string
+
+const (
+	Get      ParamType = "Get"
+	PostForm ParamType = "PostForm"
+	PostBody ParamType = "PostBody"
+)
+
 func PutParams(ctx *gin.Context, params map[string]interface{}) {
 	if ctx.IsAborted() {
 		return
@@ -32,13 +41,15 @@ func PutParams(ctx *gin.Context, params map[string]interface{}) {
 	ctx.Set("params", params)
 }
 
-func GetParams(ctx *gin.Context) map[string]interface{} {
+func GetParams(ctx *gin.Context, paramTypes ...ParamType) map[string]interface{} {
 	if ctx.IsAborted() {
 		return nil
 	}
 	if ctx.Keys["params"] != nil {
 		return ctx.Keys["params"].(map[string]interface{})
 	}
+	contentType := ctx.Request.Header.Get("Content-Type")
+	logger.Info(ctx, fmt.Sprintf("url: %v", ctx.Request.URL), zap.Any("method", ctx.Request.Method), zap.Any("Content-Type", contentType))
 	var req map[string]interface{}
 	// 读取Get中的参数
 	for k, v := range ctx.Request.URL.Query() {
@@ -54,16 +65,26 @@ func GetParams(ctx *gin.Context) map[string]interface{} {
 			req[k] = v
 		}
 	}
-	// 判断如果请求参数为空，返回nil
-	if ctx.Request.ContentLength == 0 {
+	if req != nil {
+		logger.Info(ctx, "GetParams by url", zap.Any("req", req))
+	}
+	//logger.Info(ctx, "GetParams ContentLength", zap.Any("ContentLength", ctx.Request.ContentLength))
+	var paramType = PostBody
+
+	if len(paramTypes) > 0 {
+		paramType = paramTypes[0]
+	}
+
+	if ctx.Request.ContentLength == 0 || paramType == Get {
 		return req
 	}
-	// 如果是POST请求且是x-www-form-urlencoded 读取Post中的参数
-	if (ctx.Request.Method == "POST" || ctx.Request.Method == "PUT") && ctx.Request.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+
+	isForm := strings.Contains(contentType, "application/x-www-form-urlencoded")
+	if paramType == PostForm || (ctx.Request.Method == "POST" || ctx.Request.Method == "PUT") && isForm {
 		err := ctx.Request.ParseForm()
 		if err != nil {
 			ctx.Set(ErrorKey, fmt.Sprintf("GetParams: %v", err))
-			logger.Error(ctx, "GetParams", zap.Any("err", err))
+			logger.Error(ctx, "GetParams by from", zap.Any("err", err))
 			response.ValidatorError(ctx, err)
 			return nil
 		} else {
@@ -80,7 +101,7 @@ func GetParams(ctx *gin.Context) map[string]interface{} {
 					req[k] = v
 				}
 			}
-			logger.Info(ctx, "GetParams", zap.Any("req", req))
+			logger.Info(ctx, "GetParams by from", zap.Any("req", req))
 			if req != nil {
 				return req
 			}
@@ -89,7 +110,7 @@ func GetParams(ctx *gin.Context) map[string]interface{} {
 
 	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.Set(ErrorKey, fmt.Sprintf("GetParams: %v", err))
-		logger.Error(ctx, "GetParams", zap.Any("err", err))
+		logger.Error(ctx, "GetParams by bind", zap.Any("err", err))
 		response.ValidatorError(ctx, err)
 		return nil
 	}

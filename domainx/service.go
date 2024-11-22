@@ -80,7 +80,7 @@ type DBService interface {
 	GetByID(c *Con, id int64, result interface{}) error
 	Save(c *Con, data Identifiable, newID int64) (id int64, error error)
 	UpdatePart(c *Con, id int64, data map[string]interface{}) error
-	Delete(c *Con, id int64) error
+	Delete(c *Con, data Identifiable) error
 	FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error
 	GetByMatch(c *Con, matchList []Match, result interface{}) error
 	CountByMatch(c *Con, matchList []Match) (int64, error)
