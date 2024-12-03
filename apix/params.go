@@ -26,13 +26,17 @@ const (
 	NotForce Forcible = false
 )
 
-type ParamType string
+type RequestType string
 
 const (
-	Get      ParamType = "Get"
-	PostForm ParamType = "PostForm"
-	PostBody ParamType = "PostBody"
+	Get      RequestType = "Get"
+	PostForm RequestType = "PostForm"
+	PostBody RequestType = "PostBody"
 )
+
+type ParamType interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64 | ~string | ~bool | struct{}
+}
 
 func PutParams(ctx *gin.Context, params map[string]interface{}) {
 	if ctx.IsAborted() {
@@ -41,7 +45,7 @@ func PutParams(ctx *gin.Context, params map[string]interface{}) {
 	ctx.Set("params", params)
 }
 
-func GetParams(ctx *gin.Context, paramTypes ...ParamType) map[string]interface{} {
+func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interface{} {
 	if ctx.IsAborted() {
 		return nil
 	}
@@ -69,18 +73,18 @@ func GetParams(ctx *gin.Context, paramTypes ...ParamType) map[string]interface{}
 		logger.Info(ctx, "GetParams by url", zap.Any("req", req))
 	}
 	//logger.Info(ctx, "GetParams ContentLength", zap.Any("ContentLength", ctx.Request.ContentLength))
-	var paramType = PostBody
+	var rt = PostBody
 
-	if len(paramTypes) > 0 {
-		paramType = paramTypes[0]
+	if len(requestType) > 0 {
+		rt = requestType[0]
 	}
 
-	if ctx.Request.ContentLength == 0 || paramType == Get {
+	if ctx.Request.ContentLength == 0 || rt == Get {
 		return req
 	}
 
 	isForm := strings.Contains(contentType, "application/x-www-form-urlencoded")
-	if paramType == PostForm || (ctx.Request.Method == "POST" || ctx.Request.Method == "PUT") && isForm {
+	if rt == PostForm || (ctx.Request.Method == "POST" || ctx.Request.Method == "PUT") && isForm {
 		err := ctx.Request.ParseForm()
 		if err != nil {
 			ctx.Set(ErrorKey, fmt.Sprintf("GetParams: %v", err))
@@ -220,6 +224,32 @@ func GetParamInt64(ctx *gin.Context, key string, force Forcible, defValue ...int
 	return 0, nil
 }
 
+func GetParamInt64Slice(ctx *gin.Context, key string, force Forcible, defValue ...[]int64) (value []int64, err *errors.Error) {
+	var param string
+	if get, e := getParamItem(ctx, key, force); e != nil {
+		if len(defValue) > 0 {
+			return defValue[0], nil
+		}
+		return nil, e
+	} else {
+		param = get
+	}
+
+	if param == "" && len(defValue) > 0 {
+		return defValue[0], nil
+	}
+
+	var arr []int64
+	for _, v := range strings.Split(param, ",") {
+		if s, e := strconv.ParseInt(v, 10, 64); e != nil {
+			fmt.Printf("%T, %v", s, s)
+		} else {
+			arr = append(arr, s)
+		}
+	}
+	return arr, nil
+}
+
 func GetParamFloat64(ctx *gin.Context, key string, force Forcible, defValue ...float64) (value float64, err *errors.Error) {
 	var param string
 	if get, e := getParamItem(ctx, key, force); e != nil {
@@ -243,7 +273,7 @@ func GetParamFloat64(ctx *gin.Context, key string, force Forcible, defValue ...f
 	return 0, nil
 }
 
-func GetParamArray(ctx *gin.Context, key string, force Forcible, defValue ...[]string) (value []string, err *errors.Error) {
+func GetParamArray[t any](ctx *gin.Context, key string, force Forcible, defValue ...[]t) (value []t, err *errors.Error) {
 	if ctx.IsAborted() && ctx.GetString(ErrorKey) != "" {
 		return nil, errors.Verify(ctx.GetString(ErrorKey))
 	}
@@ -259,34 +289,93 @@ func GetParamArray(ctx *gin.Context, key string, force Forcible, defValue ...[]s
 		return nil, reqErr
 	}
 	errText := fmt.Sprintf("param: %s", key)
-	defaultStr := []string{}
+
 	if len(defValue) > 0 {
-		defaultStr = defValue[0]
+		value = defValue[0]
 	}
-	if value, ok := req[key]; ok {
-		switch value.(type) {
-		case string:
-			if value.(string) == "undefined" || value.(string) == "null" {
-				return defaultStr, nil
-			}
-			return []string{value.(string)}, nil
+	if v, ok := req[key]; ok {
+		switch any(value).(type) {
 		case []string:
-			return value.([]string), nil
-		case []interface{}:
-			var arr []string
-			for _, v := range value.([]interface{}) {
-				arr = append(arr, fmt.Sprintf("%v", v))
+			slice := cast.ToStringSlice(v)
+			return any(slice).([]t), nil
+		case []int:
+			slice := cast.ToIntSlice(v)
+			return any(slice).([]t), nil
+		case []int64:
+			slice64 := make([]int64, 0)
+			for _, v := range cast.ToIntSlice(v) {
+				slice64 = append(slice64, cast.ToInt64(v))
 			}
-			return arr, nil
+			return any(slice64).([]t), nil
+		case []float64:
+			return any(value).([]t), nil
+		case []bool:
+			slice := cast.ToBoolSlice(v)
+			return any(slice).([]t), nil
 		default:
-			return nil, errors.Verify(fmt.Sprintf("GetParam: %s type error", key))
+			if get, castOK := v.([]t); castOK {
+				return get, nil
+			} else {
+				return value, errors.Verify(fmt.Sprintf("GetParam: %s type error", key))
+			}
 		}
 	} else if force {
 		ctx.Set(ErrorKey, errText)
 		response.ValidatorError(ctx, errors.Verify(errText))
 		return nil, errors.Verify(errText)
 	} else {
-		return defaultStr, nil
+		return value, nil
+	}
+}
+
+func GetParamType[t ParamType](ctx *gin.Context, key string, force Forcible, defValue ...t) (value t, err *errors.Error) {
+	if ctx.IsAborted() && ctx.GetString(ErrorKey) != "" {
+		return value, errors.Verify(ctx.GetString(ErrorKey))
+	}
+	req := GetParams(ctx)
+	if req == nil {
+		reqErr := errors.Verify("GetParam: req is nil")
+		if force {
+			response.ValidatorError(ctx, reqErr)
+		}
+		if len(defValue) > 0 {
+			return defValue[0], nil
+		}
+		return value, reqErr
+	}
+	errText := fmt.Sprintf("param: %s", key)
+
+	if len(defValue) > 0 {
+		value = defValue[0]
+	}
+
+	if v, ok := req[key]; ok {
+		switch any(value).(type) {
+		case int64:
+			toInt64 := cast.ToInt64(v)
+			return any(toInt64).(t), nil
+		case int:
+			toInt := cast.ToInt(v)
+			return any(toInt).(t), nil
+		case float64:
+			toFloat64 := cast.ToFloat64(v)
+			return any(toFloat64).(t), nil
+		case string:
+			toString := cast.ToString(v)
+			return any(toString).(t), nil
+		case bool:
+			toBool := cast.ToBool(v)
+			return any(toBool).(t), nil
+		default:
+			return value, errors.Verify(fmt.Sprintf("GetParam: %s type error", key))
+		}
+
+	} else if force {
+		ctx.Set(ErrorKey, errText)
+		response.ValidatorError(ctx, errors.Verify(errText))
+		return value, errors.Verify(errText)
+	} else {
+		return value, nil
 	}
 }
 
@@ -311,21 +400,21 @@ func getParamItem(ctx *gin.Context, key string, force Forcible, defValue ...stri
 	if len(defValue) > 0 {
 		defaultStr = defValue[0]
 	}
-	if value, ok := req[key]; ok {
-		switch value.(type) {
+	if v, ok := req[key]; ok {
+		switch v.(type) {
 		case string:
-			if value.(string) == "undefined" || value.(string) == "null" {
+			if v.(string) == "undefined" || v.(string) == "null" {
 				return defaultStr, nil
 			}
-			return value.(string), nil
+			return v.(string), nil
 		case int:
-			return fmt.Sprintf("%d", value.(int)), nil
+			return fmt.Sprintf("%d", v.(int)), nil
 		case int64:
-			return fmt.Sprintf("%d", value.(int64)), nil
+			return fmt.Sprintf("%d", v.(int64)), nil
 		case float64:
-			return fmt.Sprintf("%.2f", value.(float64)), nil
+			return fmt.Sprintf("%.2f", v.(float64)), nil
 		case bool:
-			return fmt.Sprintf("%t", value.(bool)), nil
+			return fmt.Sprintf("%t", v.(bool)), nil
 		default:
 			return "", errors.Verify(fmt.Sprintf("GetParam: %s type error", key))
 		}
@@ -362,7 +451,6 @@ func GetParam(ctx *gin.Context, key string, defValue ...string) (value interface
 	return nil, nil
 }
 
-// GetParamForce The force parameter will decide to return a parameter check error if the value is not found.
 func GetParamForce(ctx *gin.Context, key string) (value string, err *errors.Error) {
 	return getParamItem(ctx, key, Force)
 }

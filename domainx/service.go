@@ -84,6 +84,7 @@ type DBService interface {
 	FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error
 	GetByMatch(c *Con, matchList []Match, result interface{}) error
 	CountByMatch(c *Con, matchList []Match) (int64, error)
+	SumByMatch(c *Con, matchList []Match, field string) (float64, error)
 	FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error
 }
 

@@ -274,6 +274,21 @@ func CountByMatch(c *Con, matchList []Match) (int64, *errors.Error) {
 	return count, nil
 }
 
+// SumByMatch 根据条件查询总和
+func SumByMatch(c *Con, matchList []Match, field string) (float64, *errors.Error) {
+	if c == nil {
+		return 0, errors.Sys("con not init")
+	}
+
+	dbService := GetDBService(c.GetConType())
+
+	sum, gErr := dbService.SumByMatch(c, matchList, field)
+	if gErr != nil {
+		return 0, c.HandleWithErr(gErr)
+	}
+	return sum, nil
+}
+
 // UpdatePart 根据ID更新部分字段
 func UpdatePart(c *Con, id int64, data map[string]interface{}) *errors.Error {
 	if c == nil {

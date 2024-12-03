@@ -11,6 +11,7 @@ import (
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/qiniu/qmgo"
 	qoptions "github.com/qiniu/qmgo/options"
+	"github.com/spf13/cast"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,6 +32,30 @@ func init() {
 const configName = "mongo"
 
 var qmMDBMap = make(map[string]*qmgo.Client)
+
+type pre string
+
+const (
+	preCon    pre = "con"
+	preData   pre = "data"
+	preOption pre = "options"
+)
+
+func (p pre) str() string {
+	return string(p)
+}
+
+func (p pre) ad(s ...string) string {
+	return p.str() + "." + strings.Join(s, ".")
+}
+
+func (p pre) has(s string) bool {
+	return strings.HasPrefix(s, p.str())
+}
+
+func hasDef(s string) bool {
+	return preCon.has(s) || preData.has(s) || preOption.has(s)
+}
 
 func UseMongoDbConn(dbname string) *qmgo.Client {
 	if dbname == "" {
@@ -87,10 +112,9 @@ func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, ind
 				unique = new(bool)
 				*unique = true
 			}
-			// 如果不是con或者options开头的字段，需要加上data.
-			if index.Fields[0] != "con" && index.Fields[0] != "options" {
+			if index.Fields[0] != preCon.str() && index.Fields[0] != preOption.str() {
 				for i, v := range index.Fields {
-					index.Fields[i] = "data." + v
+					index.Fields[i] = preData.ad(v)
 				}
 			}
 			if index.IdxType == Spatial2D {
@@ -280,16 +304,18 @@ func (s *mongoDBService) Delete(c *Con, data Identifiable) error {
 func mapToBsonM(m map[string]interface{}, prefixes ...string) bson.M {
 	prefix := ""
 	if len(prefixes) == 0 {
-		prefix = "data."
+		prefix = preData.ad()
 	} else {
 		for _, v := range prefixes {
-			prefix += v + "."
+			prefix += pre(v).ad()
 		}
 	}
 	bm := bson.M{}
 	for k, v := range m {
-		key := prefix + k
-		// 最后最后一个字符是.的话，去掉
+		key := k
+		if !hasDef(k) {
+			key = prefix + k
+		}
 		if strings.HasSuffix(key, ".") {
 			key = key[:len(key)-1]
 		}
@@ -306,62 +332,107 @@ func sortMongoFields(s []*Sort) []string {
 			if !v.Asc {
 				order = "-"
 			}
-			pre := "data."
+			prefix := preData
 			if v.Prefix != "" {
-				pre = v.Prefix + "."
+				prefix = pre(v.Prefix)
 			}
-			sortList = append(sortList, order+pre+v.Field)
+			sortList = append(sortList, order+prefix.ad(v.Field))
 		}
 	}
 	sortList = append(sortList, "-con.id") // 默认按id倒序
 	return sortList
 }
 
-// matchMqCond Mongo根据条件列表获取条件
+var mongoKeywords = []string{
+	"db", "collection", "aggregate", "find", "insert", "update", "delete",
+}
+
 func matchMongoCond(matchList []Match) map[string]interface{} {
-	condition := make(map[string]interface{}, len(matchList))
+	condition := make(map[string]interface{})
+
 	for _, match := range matchList {
+		if fieldValue, ok := match.Value.(ValueField); ok {
+			if !fieldValue.Check(mongoKeywords...) {
+				continue
+			}
+			var operator string
+			switch match.Type {
+			case MLt:
+				operator = "$lt"
+			case MLte:
+				operator = "$lte"
+			case MGt:
+				operator = "$gt"
+			case MGte:
+				operator = "$gte"
+			}
+			exprCondition := bson.M{
+				operator: []interface{}{"$" + match.Field, "$" + string(fieldValue)},
+			}
+
+			if existingAnd, exists := condition["$and"]; exists {
+				condition["$and"] = append(existingAnd.([]bson.M), bson.M{"$expr": exprCondition})
+			} else {
+				condition["$and"] = []bson.M{
+					{"$expr": exprCondition},
+				}
+			}
+			continue
+		}
+
+		fieldCondition, exists := condition[match.Field]
+		if !exists {
+			fieldCondition = bson.M{}
+		}
+		condMap, _ := fieldCondition.(bson.M)
+
 		switch match.Type {
 		case MEq:
-			condition[match.Field] = match.Value
+			condMap["$eq"] = match.Value
 		case MLt:
-			condition[match.Field] = bson.M{"$lt": match.Value}
+			condMap["$lt"] = match.Value
 		case MLte:
-			condition[match.Field] = bson.M{"$lte": match.Value}
+			condMap["$lte"] = match.Value
 		case MGt:
-			condition[match.Field] = bson.M{"$gt": match.Value}
+			condMap["$gt"] = match.Value
 		case MGte:
-			condition[match.Field] = bson.M{"$gte": match.Value}
+			condMap["$gte"] = match.Value
 		case MLIKE:
-			condition[match.Field] = bson.M{"$regex": match.Value}
+			condMap["$regex"] = match.Value
 		case MNE:
-			condition[match.Field] = bson.M{"$ne": match.Value}
+			condMap["$ne"] = match.Value
 		case MIN:
-			condition[match.Field] = bson.M{"$in": match.Value}
+			condMap["$in"] = match.Value
 		case MNOTIN:
-			condition[match.Field] = bson.M{"$nin": match.Value}
+			condMap["$nin"] = match.Value
 		case MNEmpty:
-			condition[match.Field] = bson.M{"$exists": true, "$not": bson.M{"$size": 0}}
+			condMap["$exists"] = true
+			condMap["$not"] = bson.M{"$size": 0}
 		case NearLoc:
 			near := match.ToNearMatch()
 			if near.Distance == 0 {
-				near.Distance = 5000 * 1000
+				near.Distance = 5000 * 1000 // 默认距离设为5000km
 			}
-			condition[match.Field] = bson.M{
-				"$near": bson.M{
-					"$geometry": bson.M{
-						"type":        "Point",
-						"coordinates": []float64{near.Lng, near.Lat},
-					},
-					"$maxDistance": near.Distance,
+			condMap["$near"] = bson.M{
+				"$geometry": bson.M{
+					"type":        "Point",
+					"coordinates": []float64{near.Lng, near.Lat},
 				},
+				"$maxDistance": near.Distance,
 			}
 		default:
-			condition[match.Field] = match.Value
+			condMap["$eq"] = match.Value
 		}
+		condition[match.Field] = condMap
 	}
+
+	if len(condition) == 0 {
+		return nil
+	}
+
 	return condition
 }
+
 func (s *mongoDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
 	condition := matchMongoCond(matchList)
 	if coll, e := getColl(c); e != nil {
@@ -392,6 +463,33 @@ func (s *mongoDBService) CountByMatch(c *Con, matchList []Match) (int64, error) 
 			return 0, mErr
 		}
 		return count, nil
+	}
+}
+
+func (s *mongoDBService) SumByMatch(c *Con, matchList []Match, field string) (float64, error) {
+	condition := matchMongoCond(matchList)
+	if !Check(field) {
+		return 0, errors.Sys(fmt.Sprintf("field is not valid: %s", field))
+	}
+
+	if coll, e := getColl(c); e != nil {
+		return 0, e
+	} else {
+		var result []bson.M
+		aggregationPipeline := []bson.M{
+			{"$match": mapToBsonM(condition)},
+			{"$group": bson.M{"_id": nil, "sum": bson.M{"$sum": "$" + preData.ad(field)}}},
+		}
+
+		if mErr := coll.Aggregate(context.Background(), aggregationPipeline).All(&result); mErr != nil {
+			return 0, mErr
+		}
+
+		if len(result) > 0 {
+			return cast.ToFloat64(result[0]["sum"]), nil
+		}
+
+		return 0, nil
 	}
 }
 

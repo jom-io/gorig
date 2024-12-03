@@ -1,6 +1,10 @@
 package domainx
 
-import "github.com/spf13/cast"
+import (
+	"github.com/spf13/cast"
+	"regexp"
+	"strings"
+)
 
 type MatchType string
 
@@ -19,6 +23,46 @@ const (
 	NearLoc MatchType = "nearloc"
 	MNEmpty MatchType = "not empty"
 )
+
+func Check(s string) bool {
+	if s == "" {
+		return false
+	}
+	if strings.Contains(s, " ") {
+		return false
+	}
+	return true
+}
+
+type ValueField string
+
+func (v ValueField) Check(sqlKeywords ...string) bool {
+	if v == "" {
+		return false
+	}
+	if strings.Contains(string(v), " ") {
+		return false
+	}
+	str := strings.ReplaceAll(string(v), "`", "")
+	re := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
+	if !re.MatchString(str) {
+		return false
+	}
+	for _, keyword := range sqlKeywords {
+		if strings.Contains(strings.ToUpper(str), keyword) {
+			return false
+		}
+	}
+	if !isAlphanumericOrUnderscore(str[len(str)-1:]) {
+		return false
+	}
+	return true
+}
+
+func isAlphanumericOrUnderscore(c string) bool {
+	re := regexp.MustCompile("^[a-zA-Z0-9_]$")
+	return re.MatchString(c)
+}
 
 type Match struct {
 	Field string

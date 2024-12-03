@@ -162,30 +162,42 @@ func (s *gormDBService) Delete(c *Con, data Identifiable) error {
 	return nil
 }
 
-// matchMysqlCond Mysql根据条件列表获取条件
+var mysqlKeywords = []string{
+	"SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE", "MERGE", "REPLACE",
+	"DESCRIBE", "EXPLAIN", "SHOW", "GRANT", "REVOKE", "USE", "LOCK", "UNLOCK", "SET", "COMMIT", "ROLLBACK",
+}
+
 func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 	for _, match := range matchList {
+		if v, ok := match.Value.(ValueField); ok && !v.Check(mysqlKeywords...) {
+			continue
+		}
+		var condition string
 		switch match.Type {
 		case MEq:
-			tx = tx.Where(match.Field+" = ?", match.Value)
+			condition = "="
 		case MLt:
-			tx = tx.Where(match.Field+" < ?", match.Value)
+			condition = "<"
 		case MLte:
-			tx = tx.Where(match.Field+" <= ?", match.Value)
+			condition = "<="
 		case MGt:
-			tx = tx.Where(match.Field+" > ?", match.Value)
+			condition = ">"
 		case MGte:
-			tx = tx.Where(match.Field+" >= ?", match.Value)
+			condition = ">="
+		case MNE:
+			condition = "!="
 		case MLIKE:
 			tx = tx.Where(match.Field+" like ?", "%"+match.Value.(string)+"%")
-		case MNE:
-			tx = tx.Where(match.Field+" != ?", match.Value)
+			continue
 		case MIN:
 			tx = tx.Where(match.Field+" in (?)", match.Value)
+			continue
 		case MNOTIN:
 			tx = tx.Where(match.Field+" not in (?)", match.Value)
+			continue
 		case MNEmpty:
 			tx = tx.Where(match.Field + " != '' and " + match.Field + " is not null")
+			continue
 		case Near:
 			near := match.ToNearMatch()
 			tx = tx.Select("*, (6371 * acos(cos(radians(?)) * cos(radians("+near.LatField+")) * cos(radians("+near.LngField+") - radians(?)) + sin(radians(?)) * sin(radians("+near.LatField+")))) AS distance", near.Lat, near.Lng, near.Lat)
@@ -193,8 +205,16 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 				tx = tx.Where("6371 * acos(cos(radians(?)) * cos(radians("+near.LatField+")) * cos(radians("+near.LngField+") - radians(?)) + sin(radians(?)) * sin(radians("+near.LatField+"))) < ?", near.Lat, near.Lng, near.Lat, near.Distance)
 			}
 			tx = tx.Order("distance")
+			continue
 		default:
 			tx = tx.Where(match.Field+" = ?", match.Value)
+			continue
+		}
+
+		if fieldValue, ok := match.Value.(ValueField); ok {
+			tx = tx.Where(gorm.Expr(match.Field + " " + condition + " " + string(fieldValue)))
+		} else {
+			tx = tx.Where(match.Field+" "+condition+" ?", match.Value)
 		}
 	}
 }
@@ -242,11 +262,27 @@ func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	return count, nil
 }
 
+func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (float64, error) {
+	tx := c.DB.Table(c.TableName())
+	if !Check(field) {
+		return 0, errors.Sys(fmt.Sprintf("field is not valid: %s", field))
+	}
+	matchMysqlCond(matchList, tx)
+	var sum *float64
+	if err := tx.Select("sum(" + field + ")").Scan(&sum).Error; err != nil {
+		return 0, err
+	}
+	if sum == nil {
+		return 0, nil
+	}
+	return *sum, nil
+}
+
 func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	count := int64(0)
-	if err := tx.Count(&count).Error; err != nil {
+	if err := tx.Model(result).Count(&count).Error; err != nil {
 		return err
 	}
 	if page.LastID > 0 {

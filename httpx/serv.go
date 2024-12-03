@@ -51,6 +51,14 @@ func RegisterRouter(reg func(groupRouter *gin.RouterGroup)) {
 	reg(&gEngine.RouterGroup)
 }
 
+func RegisterRouterMid(group func(groupRouter *gin.RouterGroup, mid ...gin.HandlerFunc) *gin.RouterGroup, mid ...gin.HandlerFunc) *gin.RouterGroup {
+	var groupRouter *gin.RouterGroup
+	RegisterRouter(func(groupRouter *gin.RouterGroup) {
+		groupRouter = group(groupRouter, mid...)
+	})
+	return groupRouter
+}
+
 var gEngine = gin.New()
 var gHttpServer *http.Server
 
