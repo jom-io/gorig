@@ -1,8 +1,14 @@
-# Gorig CLI
+# Gorig
+
 
 Gorig 是一个基于 Go 语言的 Web 综合服务框架，提供了一套完整的开发模式和工具链，你可以使用gorig-cli快速创建一个新项目或新模块。
 
-## 安装
+## 直接使用
+```
+go get github.com/jom-io/gorig@latest
+```
+
+## 使用gorig-cli
 
 使用 npm 全局安装：
 
