@@ -137,7 +137,7 @@ func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *er
 	if gErr != nil {
 		return 0, c.HandleWithErr(gErr)
 	}
-
+	data.SetID(id)
 	return id, nil
 }
 

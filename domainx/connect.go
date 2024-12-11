@@ -29,6 +29,7 @@ type ConTable interface {
 
 type Identifiable interface {
 	GetID() ID
+	SetID(id int64)
 }
 
 func GetLastID[T Identifiable](conList []T) int64 {
@@ -83,6 +84,10 @@ func (c *Con) GetID() ID {
 		return 0
 	}
 	return ID(c.ID)
+}
+
+func (c *Con) SetID(id int64) {
+	c.ID = id
 }
 
 func (c *Con) GenerateId() int64 {

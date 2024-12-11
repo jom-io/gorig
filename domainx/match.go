@@ -10,7 +10,6 @@ type MatchType string
 
 const (
 	MEq     MatchType = "="
-	MEqr    MatchType = "="
 	MLt     MatchType = "<"
 	MLte    MatchType = "<="
 	MGt     MatchType = ">"

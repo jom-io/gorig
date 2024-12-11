@@ -73,7 +73,7 @@ func init() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	RegisterRouter(func(groupRouter *gin.RouterGroup) {
-		groupRouter.POST("ping", func(ctx *gin.Context) {
+		groupRouter.GET("ping", func(ctx *gin.Context) {
 			Success(ctx, gin.H{
 				"timestamp": fmt.Sprintf("%d", time.Now().UnixMilli()),
 			})

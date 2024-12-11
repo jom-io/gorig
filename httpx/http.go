@@ -245,10 +245,14 @@ func PostXML(baseURL string, params map[string]string) (resp string, err *errors
 }
 
 func ParseJSON(jsonStr string) map[string]interface{} {
+	if jsonStr == "" {
+		return nil
+	}
 	var result map[string]interface{}
 	err := json.Unmarshal([]byte(jsonStr), &result)
 	if err != nil {
-		panic(err)
+		logger.Error(nil, fmt.Sprintf("ParseJSON error: result=%v, err=%v", result, err))
+		//panic(err)
 	}
 	return result
 }

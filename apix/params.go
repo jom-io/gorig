@@ -70,7 +70,7 @@ func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interfac
 		}
 	}
 	if req != nil {
-		logger.Info(ctx, "GetParams by url", zap.Any("req", req))
+		//logger.Info(ctx, "GetParams by url", zap.Any("req", req))
 	}
 	//logger.Info(ctx, "GetParams ContentLength", zap.Any("ContentLength", ctx.Request.ContentLength))
 	var rt = PostBody
