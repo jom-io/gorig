@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/utils/logger"
@@ -12,10 +13,19 @@ import (
 
 // Cache 是一个通用的缓存接口，定义了基本的缓存操作
 type Cache[T any] interface {
+	IsInitialized() bool
 	Get(key string) (T, error)
 	Set(key string, value T, expiration time.Duration) error
-	Delete(key string) error
+	Del(key string) error
+	Exists(key string) (bool, error)
+	RPush(key string, value T) error
+	BRPop(timeout time.Duration, key string) (value interface{}, err error)
+	Incr(key string) (int64, error)
+	Expire(key string, expiration time.Duration) error
 }
+
+// ErrCacheMiss 表示缓存未命中的错误
+var ErrCacheMiss = errors.New("cache miss")
 
 // LoaderFunc 是一个用于从外部源加载数据的函数类型
 type LoaderFunc[T any] func(key string) (T, error)
@@ -98,7 +108,7 @@ func (c *Tool[T]) Set(key string, value T, expiration time.Duration) error {
 // Delete 从所有缓存层中删除数据
 func (c *Tool[T]) Delete(key string) error {
 	for _, cacheLayer := range c.caches {
-		if err := cacheLayer.Delete(key); err != nil {
+		if err := cacheLayer.Del(key); err != nil {
 			return err
 		}
 	}
