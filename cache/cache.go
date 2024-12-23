@@ -72,6 +72,11 @@ func (c *Tool[T]) Get(key string, expiration time.Duration) (T, error) {
 			}
 		}
 
+		// 如果没有 loader，则直接返回 cacheMiss
+		if c.loader == nil {
+			return zero, ErrCacheMiss
+		}
+
 		// 如果所有缓存层都未命中，使用 loader 加载数据
 		logger.Info(c.Ctx, "Cache miss in all layers, loading from external source")
 		val, err := c.loader(key)

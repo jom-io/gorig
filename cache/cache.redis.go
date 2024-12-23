@@ -1,8 +1,8 @@
-// cache/go_cache.go
 package cache
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	RedisInstance *RedisCache
+	RedisInstance *RedisCache[any]
 	initMu        sync.Mutex
 )
 
@@ -23,7 +23,7 @@ func RestRedisInstance() {
 }
 
 // GetRedisInstance 返回单例的 RedisCache 实例
-func GetRedisInstance(r ...*RedisCache) *RedisCache {
+func GetRedisInstance[T any](r ...*RedisCache[T]) *RedisCache[T] {
 	initMu.Lock()
 	defer initMu.Unlock()
 	// 再次检查是否已经初始化
@@ -31,9 +31,9 @@ func GetRedisInstance(r ...*RedisCache) *RedisCache {
 		initRedisCache()
 	}
 	if len(r) > 0 {
-		r[0] = RedisInstance
+		r[0] = (*RedisCache[T])(RedisInstance)
 	}
-	return RedisInstance
+	return (*RedisCache[T])(RedisInstance)
 }
 
 // initRedisCache 初始化 RedisCache
@@ -47,7 +47,7 @@ func initRedisCache() {
 		return
 	}
 
-	cache, err := NewRedisCache(RedisConfig{
+	cache, err := NewRedisCache[any](RedisConfig{
 		Addr:     addr,
 		Password: password,
 		DB:       db,
@@ -68,13 +68,13 @@ type RedisConfig struct {
 }
 
 // RedisCache 是 Redis 的实现
-type RedisCache struct {
+type RedisCache[T any] struct {
 	Client *redis.Client
 	Ctx    context.Context
 }
 
 // NewRedisCache 创建一个新的 RedisCache 实例
-func NewRedisCache(cfg RedisConfig) (*RedisCache, error) {
+func NewRedisCache[T any](cfg RedisConfig) (*RedisCache[T], error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
@@ -86,49 +86,56 @@ func NewRedisCache(cfg RedisConfig) (*RedisCache, error) {
 		return nil, fmt.Errorf("failed to connect to Redis: %v", err)
 	}
 
-	return &RedisCache{
+	return &RedisCache[T]{
 		Client: client,
 		Ctx:    ctx,
 	}, nil
 }
 
 // IsInitialized bool
-func (r *RedisCache) IsInitialized() bool {
+func (r *RedisCache[T]) IsInitialized() bool {
 	return r != nil && r.Client != nil
 }
 
-// Get 从 Redis 中获取数据
-func (r *RedisCache) Get(key string) (interface{}, error) {
+func (r *RedisCache[T]) Get(key string) (T, error) {
+	var zero T
 	if GetRedisInstance(r) == nil {
-		return nil, fmt.Errorf("redis client is nil")
+		return zero, fmt.Errorf("redis client is nil")
 	}
 	val, err := r.Client.Get(r.Ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
-		return nil, ErrCacheMiss
+		return zero, ErrCacheMiss
 	} else if err != nil {
-		return nil, err
+		return zero, err
 	}
-	return val, nil
+	var data T
+	if err = json.Unmarshal([]byte(val), &data); err != nil {
+		return zero, err
+	}
+	return data, nil
 }
 
-// Set 将数据存入 Redis
-func (r *RedisCache) Set(key string, value interface{}, expiration time.Duration) error {
+func (r *RedisCache[T]) Set(key string, value T, expiration time.Duration) error {
 	if GetRedisInstance(r) == nil {
 		return fmt.Errorf("redis client is nil")
 	}
-	return r.Client.Set(r.Ctx, key, value, expiration).Err()
+	jsonValue, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return r.Client.Set(r.Ctx, key, jsonValue, expiration).Err()
 }
 
 // Del 从 Redis 中删除数据
-func (r *RedisCache) Del(key string) error {
-	if GetRedisInstance() == nil {
+func (r *RedisCache[T]) Del(key string) error {
+	if GetRedisInstance(r) == nil {
 		return fmt.Errorf("redis client is nil")
 	}
 	return r.Client.Del(r.Ctx, key).Err()
 }
 
 // Exists 检查 Redis 中是否存在指定 key
-func (r *RedisCache) Exists(key string) (bool, error) {
+func (r *RedisCache[T]) Exists(key string) (bool, error) {
 	if GetRedisInstance(r) == nil {
 		return false, fmt.Errorf("redis client is nil")
 	}
@@ -140,7 +147,7 @@ func (r *RedisCache) Exists(key string) (bool, error) {
 }
 
 // RPush 将数据存入 Redis
-func (r *RedisCache) RPush(key string, value interface{}) error {
+func (r *RedisCache[T]) RPush(key string, value interface{}) error {
 	if GetRedisInstance(r) == nil {
 		return fmt.Errorf("redis client is nil")
 	}
@@ -148,7 +155,7 @@ func (r *RedisCache) RPush(key string, value interface{}) error {
 }
 
 // BRPop 从 Redis 中弹出数据 timeout 为超时时间 key 为队列名
-func (r *RedisCache) BRPop(timeout time.Duration, key string) (value interface{}, err error) {
+func (r *RedisCache[T]) BRPop(timeout time.Duration, key string) (value interface{}, err error) {
 	if GetRedisInstance(r) == nil {
 		return nil, fmt.Errorf("redis client is nil")
 	}
@@ -166,7 +173,7 @@ func (r *RedisCache) BRPop(timeout time.Duration, key string) (value interface{}
 }
 
 // Incr 递增 Redis 中的值
-func (r *RedisCache) Incr(key string) (int64, error) {
+func (r *RedisCache[T]) Incr(key string) (int64, error) {
 	if GetRedisInstance(r) == nil {
 		return 0, fmt.Errorf("redis client is nil")
 	}
@@ -174,7 +181,7 @@ func (r *RedisCache) Incr(key string) (int64, error) {
 }
 
 // Expire 设置 Redis 中 key 的过期时间
-func (r *RedisCache) Expire(key string, expiration time.Duration) error {
+func (r *RedisCache[T]) Expire(key string, expiration time.Duration) error {
 	if GetRedisInstance(r) == nil {
 		return fmt.Errorf("redis client is nil")
 	}

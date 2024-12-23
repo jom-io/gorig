@@ -20,7 +20,7 @@ func init() {
 	caches = []Cache[any]{l1Cache}
 
 	// 创建二级缓存（Redis）
-	l2Cache := GetRedisInstance()
+	l2Cache := GetRedisInstance[any]()
 	if l2Cache != nil {
 		caches = append(caches, l2Cache)
 	}
