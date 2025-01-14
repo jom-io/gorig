@@ -281,6 +281,7 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
+	sortMysqlCond(c.Sort, tx)
 	count := int64(0)
 	if err := tx.Model(result).Count(&count).Error; err != nil {
 		return err
