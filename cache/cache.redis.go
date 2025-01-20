@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/spf13/cast"
 	"sync"
 	"time"
 
@@ -41,7 +42,7 @@ func initRedisCache() {
 	RedisInstance = nil
 	addr := configure.GetString("redis.addr")
 	password := configure.GetString("redis.password")
-	db := configure.GetInt("redis.db")
+	db := configure.GetString("redis.db")
 	if addr == "" {
 		sys.Error("# Redis addr is empty, skipping initialization")
 		return
@@ -50,7 +51,7 @@ func initRedisCache() {
 	cache, err := NewRedisCache[any](RedisConfig{
 		Addr:     addr,
 		Password: password,
-		DB:       db,
+		DB:       cast.ToInt(db),
 	})
 	if err != nil {
 		sys.Error("# failed to init Redis cache: ", err)
