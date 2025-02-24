@@ -65,3 +65,59 @@ func Duration(d time.Duration) *time.Duration {
 func N[T any](o T) *T {
 	return &o
 }
+
+func PStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func PInt(i *int) int {
+	if i == nil {
+		return 0
+	}
+	return *i
+}
+
+func PInt32(i *int32) int32 {
+	if i == nil {
+		return int32(0)
+	}
+	return *i
+}
+
+func PInt64(i *int64) int64 {
+	if i == nil {
+		return int64(0)
+	}
+	return *i
+}
+
+func PBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
+}
+
+func PFloat32(f *float32) float32 {
+	if f == nil {
+		return float32(0)
+	}
+	return *f
+}
+
+func PFloat64(f *float64) float64 {
+	if f == nil {
+		return float64(0)
+	}
+	return *f
+}
+
+func PTime(t *time.Time) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return *t
+}
