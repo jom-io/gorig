@@ -81,6 +81,7 @@ type DBService interface {
 	Save(c *Con, data Identifiable, newID int64, version ...int) (id int64, error error)
 	UpdatePart(c *Con, id int64, data map[string]interface{}) error
 	Delete(c *Con, data Identifiable) error
+	DeleteByMatch(c *Con, matchList []Match) error
 	FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error
 	GetByMatch(c *Con, matchList []Match, result interface{}) error
 	CountByMatch(c *Con, matchList []Match) (int64, error)

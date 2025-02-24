@@ -301,6 +301,16 @@ func (s *mongoDBService) Delete(c *Con, data Identifiable) error {
 	}
 }
 
+func (s *mongoDBService) DeleteByMatch(c *Con, matchList []Match) error {
+	if coll, e := getColl(c); e != nil {
+		return e
+	} else {
+		condition := matchMongoCond(matchList)
+		mErr := coll.Remove(context.Background(), mapToBsonM(condition))
+		return mErr
+	}
+}
+
 func mapToBsonM(m map[string]interface{}, prefixes ...string) bson.M {
 	prefix := ""
 	if len(prefixes) == 0 {

@@ -178,6 +178,15 @@ func (s *gormDBService) Delete(c *Con, data Identifiable) error {
 	return nil
 }
 
+func (s *gormDBService) DeleteByMatch(c *Con, matchList []Match) error {
+	tx := c.DB.Table(c.TableName())
+	matchMysqlCond(matchList, tx)
+	if err := tx.Delete(&Options{}).Error; err != nil {
+		return err
+	}
+	return tx.Error
+}
+
 var mysqlKeywords = []string{
 	"SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE", "MERGE", "REPLACE",
 	"DESCRIBE", "EXPLAIN", "SHOW", "GRANT", "REVOKE", "USE", "LOCK", "UNLOCK", "SET", "COMMIT", "ROLLBACK",

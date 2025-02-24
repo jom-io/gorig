@@ -150,7 +150,6 @@ func Save(c *Con, data Identifiable, newIDs ...int64) (id int64, err *errors.Err
 	return save(c, data, 1, newIDs...)
 }
 
-// Delete
 func Delete(c *Con, data Identifiable) *errors.Error {
 	if c == nil {
 		return errors.Sys("con not init")
@@ -159,6 +158,20 @@ func Delete(c *Con, data Identifiable) *errors.Error {
 	dbService := GetDBService(c.GetConType())
 
 	gErr := dbService.Delete(c, data)
+	if gErr != nil {
+		return c.HandleWithErr(gErr)
+	}
+	return nil
+}
+
+func DeleteByMatch(c *Con, matchList []Match) *errors.Error {
+	if c == nil {
+		return errors.Sys("con not init")
+	}
+
+	dbService := GetDBService(c.GetConType())
+
+	gErr := dbService.DeleteByMatch(c, matchList)
 	if gErr != nil {
 		return c.HandleWithErr(gErr)
 	}
