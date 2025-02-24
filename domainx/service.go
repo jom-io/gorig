@@ -51,7 +51,7 @@ func (s *serviceInfo) Migrate(m *Migration) error {
 	}
 	con := value.GetCon()
 	if con == nil {
-		return fmt.Errorf("AutoMigrate db is nil, %v", value)
+		return nil
 	}
 	if value == nil {
 		return fmt.Errorf("AutoMigrate value is nil, %v", value)
@@ -78,7 +78,7 @@ type DBService interface {
 	End() error
 	Migrate(con *Con, tableName string, value ConTable, indexList []Index) error
 	GetByID(c *Con, id int64, result interface{}) error
-	Save(c *Con, data Identifiable, newID int64) (id int64, error error)
+	Save(c *Con, data Identifiable, newID int64, version ...int) (id int64, error error)
 	UpdatePart(c *Con, id int64, data map[string]interface{}) error
 	Delete(c *Con, data Identifiable) error
 	FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error

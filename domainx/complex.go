@@ -57,6 +57,9 @@ func UseComplex[T any](conType ConType, dbName string, table string, prefix ...s
 		table = variable.TBPrefix + table
 	}
 	c := Complex[T]{Con: UseCon(conType, dbName, table)}
+	if c.Con == nil {
+		return &c
+	}
 	c.Con.SaveCreateTime = func() {
 		c.SaveCreate()
 	}

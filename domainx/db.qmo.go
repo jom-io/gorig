@@ -245,7 +245,7 @@ func (s *mongoDBService) GetByID(c *Con, id int64, result interface{}) error {
 	return nil
 }
 
-func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64) (id int64, error error) {
+func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ...int) (id int64, error error) {
 	if coll, e := getColl(c); e != nil {
 		return 0, e
 	} else {

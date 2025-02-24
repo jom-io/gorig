@@ -12,9 +12,15 @@ import (
 	"time"
 )
 
+func IsRegistered() bool {
+	return gHttpServer != nil
+}
+
 func Startup(code, port string) error {
 	if gHttpServer != nil {
-		sys.Exit(errors.Sys("You should not start the rest service twice"))
+		sys.Info(" * Rest service already started")
+		return nil
+		//sys.Exit(errors.Sys("You should not start the rest service twice"))
 	}
 	gHttpServer = &http.Server{
 		Addr:              port,

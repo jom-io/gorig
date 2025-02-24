@@ -8,17 +8,10 @@ import (
 type ID int64
 
 func (i ID) GenerateID() int64 {
-	//if i == nil {
-	//	i = new(ID)
-	//}
-	// 创建一个新的随机数生成器，使用当前时间戳作为种子
 	randSource := rand.NewSource(time.Now().UnixNano())
 	rnd := rand.New(randSource)
-	// 获取当前时间戳的毫秒表示形式
 	currentTimestampMillis := time.Now().UnixNano() / 1_000_000
-	// 生成3位随机数
 	randomNumber := rnd.Intn(900) + 100
-	// 将当前时间戳和3位随机数组合起来
 	result := currentTimestampMillis*1000 + int64(randomNumber)
 	return result
 }

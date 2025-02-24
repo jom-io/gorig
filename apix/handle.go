@@ -8,7 +8,6 @@ import (
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/notify/dingding"
-	"go.uber.org/zap"
 	"runtime/debug"
 )
 
@@ -26,7 +25,7 @@ func HandleError(ctx *gin.Context, code int, data *interface{}, error *errors.Er
 	if error == nil {
 		return
 	}
-	logger.Error(ctx, error.Message, zap.Any("error", error))
+	logger.Error(ctx, error.Error())
 	if error.Type == errors.System {
 		response.ErrorSystem(ctx, httpx.GetTraceID(ctx), httpx.GetTraceID(ctx))
 		log := fmt.Sprintf("TraceID: %s, \nError: %v, \nRequest: %v,  \nStack: %s", httpx.GetTraceID(ctx), error, ctx.Request, string(debug.Stack()))

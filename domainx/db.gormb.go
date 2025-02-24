@@ -136,12 +136,28 @@ func (s *gormDBService) GetByID(c *Con, id int64, result interface{}) error {
 	return nil
 }
 
-func (s *gormDBService) Save(c *Con, data Identifiable, newID int64) (id int64, err error) {
-	if c.GetID().IsNil() && newID != 0 {
-		c.ID = newID
+func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...int) (id int64, err error) {
+	var tx *gorm.DB
+	if c.GetID().IsNil() {
+		if newID != 0 {
+			c.ID = newID
+		}
+		tx = c.DB.Table(c.TableName()).Create(data)
+	} else {
+		if version != nil && len(version) > 0 && version[0] > 0 {
+			tx = c.DB.Table(c.TableName()).Updates(data)
+		} else {
+			if eg := c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Count(&id); eg.Error != nil {
+				return 0, eg.Error
+			}
+			if id == 0 {
+				tx = c.DB.Table(c.TableName()).Create(data)
+			} else {
+				tx = c.DB.Table(c.TableName()).Updates(data)
+			}
+		}
+		//tx = c.DB.Table(c.TableName()).Save(data)
 	}
-
-	tx := c.DB.Table(c.TableName()).Save(data)
 	if tx.Error != nil {
 		return 0, tx.Error
 	}

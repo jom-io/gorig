@@ -43,7 +43,7 @@ Thumbs.db
 *.log
 *.jsonl
 .logs
-_bin/
+/_bin/
 *.yaml
 *.pem
 *.crt

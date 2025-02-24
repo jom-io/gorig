@@ -140,8 +140,8 @@ func ErrorTokenRefreshFail(c *gin.Context) {
 }
 
 // TokenErrorParam 参数校验错误
-func TokenErrorParam(c *gin.Context, wrongParam interface{}) {
-	ReturnJson(c, http.StatusUnauthorized, consts.ValidatorParamsCheckFailCode, consts.ValidatorParamsCheckFailMsg, &wrongParam)
+func TokenErrorParam(c *gin.Context, msg string) {
+	ReturnJson(c, http.StatusForbidden, consts.ValidatorParamsCheckFailCode, msg, nil)
 	c.Abort()
 }
 

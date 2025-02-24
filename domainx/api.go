@@ -10,7 +10,6 @@ import (
 
 func UseCon(conType ConType, dbName string, table string) *Con {
 	con := new(Con)
-	//con.ID = new(ID)
 	con.ConType = conType
 	con.DBName = dbName
 	con.GTable = table
@@ -31,7 +30,7 @@ func UseCon(conType ConType, dbName string, table string) *Con {
 }
 
 func CtIdx(idxType IdxType, fileds ...string) Index {
-	// 校验不能存在空字符串和重复字段和-
+	// Validate that there are no empty strings, duplicate fields, or hyphens
 	for _, v := range fileds {
 		if v == "" {
 			logger.Logger.Fatal("CreateIdx field is nil")
@@ -40,7 +39,7 @@ func CtIdx(idxType IdxType, fileds ...string) Index {
 			logger.Logger.Fatal("CreateIdx field can not contain -")
 		}
 	}
-	// 校验重复字段
+	// Validate duplicate fields
 	for i := 0; i < len(fileds); i++ {
 		for j := i + 1; j < len(fileds); j++ {
 			if fileds[i] == fileds[j] {
@@ -68,17 +67,16 @@ func (c *Con) HandleWithErr(err error) (error *errors.Error) {
 		if err.Error() == "mongo: no documents in result" {
 			return nil
 		}
-		error = errors.Sys(fmt.Sprintf("%s数据库操作失败: %s", c.TableName(), err.Error()))
+		error = errors.Sys(fmt.Sprintf("%s database operation failed: %s", c.TableName(), err.Error()))
 		return error
 	}
 	return nil
 }
 
 func unknownDBType() *errors.Error {
-	return errors.Sys("未知的数据库类型")
+	return errors.Sys("Unknown database type")
 }
 
-// GetByID 获取单条记录
 func GetByID[T any](c *Con, id int64, result *T) (err *errors.Error) {
 	if id <= 0 {
 		return nil
@@ -96,19 +94,17 @@ func GetByID[T any](c *Con, id int64, result *T) (err *errors.Error) {
 	return nil
 }
 
-// MustGetByID 获取单条记录
 func MustGetByID[T Identifiable](c *Con, id int64, result T) *errors.Error {
 	err := GetByID(c, id, &result)
 	if err != nil {
 		return err
 	}
 	if &result == nil || result.GetID().IsNil() {
-		return errors.Verify("未找到该记录")
+		return errors.Verify("Record not found")
 	}
 	return nil
 }
 
-// FindByIDs
 func FindByIDs[T any](c *Con, ids []int64, result *[]T) *errors.Error {
 	if c == nil {
 		return errors.Sys("con not init")
@@ -118,13 +114,13 @@ func FindByIDs[T any](c *Con, ids []int64, result *[]T) *errors.Error {
 	return FindByMatch(c, *matchList, result, "con")
 }
 
-// SaveOrUpdate 新增或者根据id更新
-func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *errors.Error) {
+func save(c *Con, data Identifiable, version int, newIDs ...int64) (id int64, err *errors.Error) {
 	if c == nil {
 		return 0, errors.Sys("con not init")
 	}
 
 	dbService := GetDBService(c.GetConType())
+
 	if !data.GetID().IsNil() {
 		c.ID = data.GetID().Int64()
 	}
@@ -132,8 +128,12 @@ func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *er
 	newID := int64(0)
 	if len(newIDs) > 0 {
 		newID = newIDs[0]
+		if newID == 0 {
+			newID = c.GenerateID()
+		}
 	}
-	id, gErr := dbService.Save(c, data, newID)
+
+	id, gErr := dbService.Save(c, data, newID, version)
 	if gErr != nil {
 		return 0, c.HandleWithErr(gErr)
 	}
@@ -141,7 +141,16 @@ func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *er
 	return id, nil
 }
 
-// Delete 删除
+// Deprecated: This method is no longer recommended. Use Save instead.
+func SaveOrUpdate(c *Con, data Identifiable, newIDs ...int64) (id int64, err *errors.Error) {
+	return save(c, data, 0, newIDs...)
+}
+
+func Save(c *Con, data Identifiable, newIDs ...int64) (id int64, err *errors.Error) {
+	return save(c, data, 1, newIDs...)
+}
+
+// Delete
 func Delete(c *Con, data Identifiable) *errors.Error {
 	if c == nil {
 		return errors.Sys("con not init")
@@ -156,7 +165,7 @@ func Delete(c *Con, data Identifiable) *errors.Error {
 	return nil
 }
 
-// toSnake 驼峰转蛇形
+// toSnake converts camel case to snake case
 func toSnake(s string) string {
 	data := make([]byte, 0, len(s)*2)
 	j := false
@@ -174,16 +183,14 @@ func toSnake(s string) string {
 	return string(data)
 }
 
-// GetByField 根据字段名称和值查询单条记录
+// GetByField queries a single record by field name and value
 func GetByField[T any](c *Con, fieldName string, value interface{}, result *T) (err *errors.Error) {
-	// 将condition转为matchList 使用=连接
 	matchList := []Match{{Field: fieldName, Value: value, Type: MEq}}
 	return GetByMatch(c, matchList, result)
 }
 
-// GetByCondition 根据条件查询单条记录
+// GetByCondition queries a single record by condition
 func GetByCondition[T any](c *Con, condition map[string]interface{}, result *T) (err *errors.Error) {
-	// 将condition转为matchList 使用=连接
 	matchList := make([]Match, 0, len(condition))
 	for k, v := range condition {
 		matchList = append(matchList, Match{Field: k, Value: v, Type: MEq})
@@ -192,16 +199,14 @@ func GetByCondition[T any](c *Con, condition map[string]interface{}, result *T) 
 
 }
 
-// FindByField 根据字段名称和值查询多条记录 最多返回1000条
+// FindByField queries multiple records by field name and value, returns up to 1000 records
 func FindByField[T any](c *Con, fieldName string, value interface{}, result *[]T, prefixes ...string) (err *errors.Error) {
-	// 将condition转为matchList 使用=连接
 	matchList := []Match{{Field: fieldName, Value: value, Type: MEq}}
 	return FindByMatch(c, matchList, result, prefixes...)
 }
 
-// FindByCondition 根据条件查询多条记录 最多返回1000条
+// FindByCondition queries multiple records by condition, returns up to 1000 records
 func FindByCondition[T any](c *Con, condition map[string]interface{}, result *[]T, prefixes ...string) (err *errors.Error) {
-	// 将condition转为matchList 使用=连接
 	matchList := make([]Match, 0, len(condition))
 	for k, v := range condition {
 		matchList = append(matchList, Match{Field: k, Value: v, Type: MEq})
@@ -209,7 +214,7 @@ func FindByCondition[T any](c *Con, condition map[string]interface{}, result *[]
 	return FindByMatch(c, matchList, result, prefixes...)
 }
 
-// FindByMatch 根据条件查询多条记录 最多返回1000条
+// FindByMatch queries multiple records by condition, returns up to 1000 records
 func FindByMatch[T any](c *Con, matchList []Match, result *[]T, prefixes ...string) (err *errors.Error) {
 	if c == nil {
 		return errors.Sys("con not init")
@@ -227,7 +232,7 @@ func FindByMatch[T any](c *Con, matchList []Match, result *[]T, prefixes ...stri
 	return nil
 }
 
-// GetByMatch 根据条件查询单条记录
+// GetByMatch queries a single record by condition
 func GetByMatch[T any](c *Con, matchList []Match, result *T) (err *errors.Error) {
 	if c == nil {
 		return errors.Sys("con not init")
@@ -242,16 +247,14 @@ func GetByMatch[T any](c *Con, matchList []Match, result *T) (err *errors.Error)
 	return nil
 }
 
-// CountByField 根据字段名称和值查询数量
+// CountByField queries the count by field name and value
 func CountByField(c *Con, fieldName string, value interface{}) (int64, *errors.Error) {
-	// 将condition转为matchList 使用=连接
 	matchList := []Match{{Field: fieldName, Value: value, Type: MEq}}
 	return CountByMatch(c, matchList)
 }
 
-// CountByCondition 根据条件查询数量
+// CountByCondition queries the count by condition
 func CountByCondition(c *Con, condition map[string]interface{}) (int64, *errors.Error) {
-	// 将condition转为matchList 使用=连接
 	matchList := make([]Match, 0, len(condition))
 	for k, v := range condition {
 		matchList = append(matchList, Match{Field: k, Value: v, Type: MEq})
@@ -259,7 +262,7 @@ func CountByCondition(c *Con, condition map[string]interface{}) (int64, *errors.
 	return CountByMatch(c, matchList)
 }
 
-// CountByMatch 根据条件查询数量
+// CountByMatch queries the count by condition
 func CountByMatch(c *Con, matchList []Match) (int64, *errors.Error) {
 	if c == nil {
 		return 0, errors.Sys("con not init")
@@ -274,7 +277,7 @@ func CountByMatch(c *Con, matchList []Match) (int64, *errors.Error) {
 	return count, nil
 }
 
-// SumByMatch 根据条件查询总和
+// SumByMatch queries the sum by condition
 func SumByMatch(c *Con, matchList []Match, field string) (float64, *errors.Error) {
 	if c == nil {
 		return 0, errors.Sys("con not init")
@@ -289,7 +292,7 @@ func SumByMatch(c *Con, matchList []Match, field string) (float64, *errors.Error
 	return sum, nil
 }
 
-// UpdatePart 根据ID更新部分字段
+// UpdatePart updates partial fields by ID
 func UpdatePart(c *Con, id int64, data map[string]interface{}) *errors.Error {
 	if c == nil {
 		return errors.Sys("con not init")
@@ -304,16 +307,14 @@ func UpdatePart(c *Con, id int64, data map[string]interface{}) *errors.Error {
 	return nil
 }
 
-// FindByPageField FiledName查询分页
+// FindByPageField queries paginated records by field name
 func FindByPageField[T Identifiable](c *Con, fieldName string, value interface{}, page *load.Page, pageResp *load.PageResp, result *[]T, prefixes ...string) *errors.Error {
-	// 将condition转为matchList 使用=连接
 	matchList := []Match{{Field: fieldName, Value: value, Type: MEq}}
 	return FindByPageMatch(c, matchList, page, pageResp, result, prefixes...)
 }
 
-// FindByPage Condition查询分页
+// FindByPage queries paginated records by condition
 func FindByPage[T Identifiable](c *Con, condition map[string]interface{}, page *load.Page, pageResp *load.PageResp, result *[]T, prefixes ...string) *errors.Error {
-	// 将condition转为matchList 使用=连接
 	matchList := make([]Match, 0, len(condition))
 	for k, v := range condition {
 		matchList = append(matchList, Match{Field: k, Value: v, Type: MEq})
