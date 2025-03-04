@@ -55,36 +55,26 @@ func Debounce(duration time.Duration) gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		// 如果是白名单，直接跳过
 		//logger.Info(c, "Debounce", zap.Any("path", c.Request.URL.Path))
 		if _, ok := whiteList[c.Request.URL.Path]; ok {
 			c.Next()
 			return
 		}
 
-		// 如果是GET请求，使用请求路径作为key并且带上请求参数
 		path := c.Request.URL.Path
 		if c.Request.Method == "GET" {
 			path += "?" + c.Request.URL.RawQuery
 		}
 
 		token := GetTokenByCtx(c, false)
-		// 如果存在 userID
 		id := GetUserIDByToken(token)
 
 		var requestKey string
 		if id != "" {
-			// 如果存在userID，使用userID和请求路径组合作为key
 			requestKey = path + ":id:" + id
 		} else {
-			//if token != "" {
-			//	// 如果有用户token，使用用户token和请求路径组合作为key
-			//	requestKey = path + ":token:" + token
-			//} else {
-			// 如果没有用户token，使用客户端IP地址和请求路径组合作为key
 			clientIP := c.ClientIP()
 			requestKey = path + ":ip:" + clientIP
-			//}
 		}
 
 		//requestMap.Lock()
@@ -111,7 +101,7 @@ func NewShardedRequestMap() *ShardedRequestMap {
 	for i := 0; i < shardCount; i++ {
 		srm.shards[i] = &shard{m: make(map[string]time.Time)}
 	}
-	go srm.startCleanupRoutine() // 启动异步清理例程
+	go srm.startCleanupRoutine()
 	sys.Info(" # StartShardedCleanupRoutine")
 	return srm
 }
@@ -137,7 +127,6 @@ func (srm *ShardedRequestMap) Set(key string, value time.Time) {
 	shard.m[key] = value
 }
 
-// 启动异步清理例程
 func (srm *ShardedRequestMap) startCleanupRoutine() {
 	ticker := time.NewTicker(checkInterval)
 	defer ticker.Stop()
@@ -147,9 +136,8 @@ func (srm *ShardedRequestMap) startCleanupRoutine() {
 			go func() {
 				s.Lock()
 				defer s.Unlock()
-				//
 				if float64(approximateEntrySize*len(s.m)) >= maxShardMemory {
-					s.m = make(map[string]time.Time) // 清空分片
+					s.m = make(map[string]time.Time) // clear the map
 					logger.Info(nil, "startCleanupRoutine", zap.Any("size:", len(s.m)*approximateEntrySize), zap.Any("maxShardMemory", maxShardMemory))
 				}
 			}()

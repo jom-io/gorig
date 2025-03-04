@@ -102,7 +102,7 @@ func PublishWithCtx(ctx *gin.Context, topic any, message *Message) *errors.Error
 	return Publish(topicStr, message)
 }
 
-func PublishNewMsg(ctx *gin.Context, topic any, content interface{}, groupId ...string) {
+func PublishNewMsg[T any](ctx *gin.Context, topic any, content T, groupId ...string) {
 	topicStr := getTopicStr(topic)
 	if topicStr == "" {
 		logger.Error(ctx, "PublishNewMsg: topic is empty")

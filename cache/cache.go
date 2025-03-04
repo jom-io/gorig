@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// Cache 是一个通用的缓存接口，定义了基本的缓存操作
+// Cache is a generic cache interface that defines basic cache operations
 type Cache[T any] interface {
 	IsInitialized() bool
 	Get(key string) (T, error)
@@ -24,13 +24,13 @@ type Cache[T any] interface {
 	Expire(key string, expiration time.Duration) error
 }
 
-// ErrCacheMiss 表示缓存未命中的错误
+// ErrCacheMiss indicates a cache miss error
 var ErrCacheMiss = errors.New("cache miss")
 
-// LoaderFunc 是一个用于从外部源加载数据的函数类型
+// LoaderFunc is a function type for loading data from an external source
 type LoaderFunc[T any] func(key string) (T, error)
 
-// Tool 是多级缓存的管理工具
+// Tool is a management tool for multi-level cache
 type Tool[T any] struct {
 	Ctx    *gin.Context
 	caches []Cache[T]
@@ -39,7 +39,7 @@ type Tool[T any] struct {
 	mu     sync.Mutex
 }
 
-// NewCacheTool 创建一个新的 Tool 实例
+// NewCacheTool creates a new Tool instance
 func NewCacheTool[T any](ctx *gin.Context, caches []Cache[T], loader LoaderFunc[T]) *Tool[T] {
 	return &Tool[T]{
 		Ctx:    ctx,
@@ -48,20 +48,20 @@ func NewCacheTool[T any](ctx *gin.Context, caches []Cache[T], loader LoaderFunc[
 	}
 }
 
-// Get 从缓存中获取数据，依次查找各级缓存，如果都未命中则通过 loader 加载
+// Get retrieves data from the cache, searching each level in order, and loads from the loader if all levels miss
 func (c *Tool[T]) Get(key string, expiration time.Duration) (T, error) {
 	var zero T
-	// 使用 singleflight 防止缓存击穿
+	// Use singleflight to prevent cache stampede
 	v, err, _ := c.group.Do(key, func() (interface{}, error) {
 		var value T
 
-		// 从各级缓存中依次查找
+		// Search each cache level in order
 		for i, cacheLayer := range c.caches {
 			val, err := cacheLayer.Get(key)
 			if err == nil {
 				logger.Info(c.Ctx, fmt.Sprintf("Cache hit in layer %d", i+1))
 				value = val
-				// 将数据同步到更高级别的缓存
+				// Sync data to higher-level caches
 				for j := 0; j < i; j++ {
 					err = c.caches[j].Set(key, value, expiration)
 					if err != nil {
@@ -72,12 +72,12 @@ func (c *Tool[T]) Get(key string, expiration time.Duration) (T, error) {
 			}
 		}
 
-		// 如果没有 loader，则直接返回 cacheMiss
+		// If no loader, return cacheMiss directly
 		if c.loader == nil {
 			return zero, ErrCacheMiss
 		}
 
-		// 如果所有缓存层都未命中，使用 loader 加载数据
+		// If all cache levels miss, load data using loader
 		logger.Info(c.Ctx, "Cache miss in all layers, loading from external source")
 		val, err := c.loader(key)
 		if err != nil {
@@ -85,7 +85,7 @@ func (c *Tool[T]) Get(key string, expiration time.Duration) (T, error) {
 		}
 		value = val
 
-		// 将数据存入所有缓存层
+		// Store data in all cache levels
 		for _, cacheLayer := range c.caches {
 			cacheLayer.Set(key, value, expiration)
 		}
@@ -100,7 +100,7 @@ func (c *Tool[T]) Get(key string, expiration time.Duration) (T, error) {
 	return v.(T), nil
 }
 
-// Set 将数据存入所有缓存层
+// Set stores data in all cache levels
 func (c *Tool[T]) Set(key string, value T, expiration time.Duration) error {
 	for _, cacheLayer := range c.caches {
 		if err := cacheLayer.Set(key, value, expiration); err != nil {
@@ -110,7 +110,7 @@ func (c *Tool[T]) Set(key string, value T, expiration time.Duration) error {
 	return nil
 }
 
-// Delete 从所有缓存层中删除数据
+// Delete removes data from all cache levels
 func (c *Tool[T]) Delete(key string) error {
 	for _, cacheLayer := range c.caches {
 		if err := cacheLayer.Del(key); err != nil {

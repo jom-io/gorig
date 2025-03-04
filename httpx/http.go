@@ -18,7 +18,6 @@ import (
 var client = &http.Client{}
 
 func Get(baseURL string, params map[string]string) (resp string, err *errors.Error) {
-	// 拼接参数
 	reqURL := baseURL
 	if params != nil {
 		values := url.Values{}
@@ -28,14 +27,12 @@ func Get(baseURL string, params map[string]string) (resp string, err *errors.Err
 		reqURL = baseURL + "?" + values.Encode()
 	}
 
-	// 发起Get请求
 	response, httpErr := http.Get(reqURL)
 	if err != nil {
 		return "", errors.Sys(fmt.Sprintf("http.Get error: %v", httpErr.Error()))
 	}
 	defer response.Body.Close()
 
-	// 读取响应
 	body, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Sys(fmt.Sprintf("ioutil.ReadAll error: %v", readErr.Error()))
@@ -45,7 +42,6 @@ func Get(baseURL string, params map[string]string) (resp string, err *errors.Err
 }
 
 func GetHeader(baseURL string, params map[string]string, header map[string]string) (resp string, err *errors.Error) {
-	// 拼接参数
 	reqURL := baseURL
 	if params != nil {
 		values := url.Values{}
@@ -55,7 +51,6 @@ func GetHeader(baseURL string, params map[string]string, header map[string]strin
 		reqURL = baseURL + "?" + values.Encode()
 	}
 
-	// 发起Get请求
 	req, reqErr := http.NewRequest("GET", reqURL, nil)
 	if reqErr != nil {
 		return "", errors.Sys(fmt.Sprintf("http.NewRequest error: %v", reqErr))
@@ -70,7 +65,6 @@ func GetHeader(baseURL string, params map[string]string, header map[string]strin
 	}
 	defer response.Body.Close()
 
-	// 读取响应
 	body, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Sys(fmt.Sprintf("ioutil.ReadAll error: %v", readErr))
@@ -101,14 +95,12 @@ func PostForm(baseURL string, params map[string]string) (resp string, err *error
 		values.Add(k, v)
 	}
 
-	// 发起Post请求
 	response, httpErr := http.PostForm(baseURL, values)
 	if httpErr != nil {
 		return "", errors.Sys(fmt.Sprintf("http.PostForm error: %v", httpErr.Error()))
 	}
 	defer response.Body.Close()
 
-	// 读取响应
 	body, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Sys(fmt.Sprintf("ioutil.ReadAll error: %v", readErr.Error()))
@@ -118,20 +110,18 @@ func PostForm(baseURL string, params map[string]string) (resp string, err *error
 }
 
 func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.Error) {
-	// 序列化参数为 JSON 字符串
 	jsonData, marshalErr := json.Marshal(params)
 	if marshalErr != nil {
 		return "", errors.Sys(fmt.Sprintf("json.Marshal error: %v", marshalErr))
 	}
 	logger.Info(nil, fmt.Sprintf("PostJSONResp: %s, %s", baseURL, jsonData))
-	// 发起Post请求
+
 	response, httpErr := client.Post(baseURL, "application/json", bytes.NewReader(jsonData))
 	if httpErr != nil { // 注意这里的错误检查修正
 		return "", errors.Sys(fmt.Sprintf("http.Post error: %v", httpErr))
 	}
 	defer response.Body.Close()
 
-	// 读取响应
 	body, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Sys(fmt.Sprintf("io.ReadAll error: %v", readErr))
@@ -144,13 +134,11 @@ func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.
 }
 
 func PostJSONRespHeader(baseURL string, params interface{}, header map[string]string) (resp string, err *errors.Error) {
-	// 序列化参数为 JSON 字符串
 	jsonData, marshalErr := json.Marshal(params)
 	if marshalErr != nil {
 		return "", errors.Sys(fmt.Sprintf("json.Marshal error: %v", marshalErr))
 	}
 
-	// 发起Post请求
 	req, reqErr := http.NewRequest("POST", baseURL, bytes.NewReader(jsonData))
 	if reqErr != nil {
 		return "", errors.Sys(fmt.Sprintf("http.NewRequest error: %v", reqErr))
@@ -221,21 +209,18 @@ func GetByCtx(ctx *gin.Context, baseURL string, params map[string]interface{}) (
 }
 
 func PostXML(baseURL string, params map[string]string) (resp string, err *errors.Error) {
-	// 序列化参数为 XML 字符串
 	xmlData := "<xml>"
 	for k, v := range params {
 		xmlData += fmt.Sprintf("<%s>%s</%s>", k, v, k)
 	}
 	xmlData += "</xml>"
 
-	// 发起Post请求
 	response, httpErr := http.Post(baseURL, "application/xml", bytes.NewReader([]byte(xmlData)))
 	if httpErr != nil {
 		return "", errors.Sys(fmt.Sprintf("http.Post error: %v", httpErr))
 	}
 	defer response.Body.Close()
 
-	// 读取响应
 	body, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Sys(fmt.Sprintf("io.ReadAll error: %v", readErr))
@@ -267,6 +252,6 @@ func ParseXML[T any](xmlStr string) (*T, *errors.Error) {
 }
 
 func init() {
-	// 设置请求超时时间 30s
+	// timeout 120s
 	client.Timeout = 120 * time.Second
 }

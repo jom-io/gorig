@@ -120,7 +120,6 @@ func Covert[T any](r *PageResp) *PageRespT[T] {
 		}
 	}
 	result := new([]T)
-	// 改为用JSON序列化反序列化
 	if r.Result != nil {
 		b, _ := json.Marshal(r.Result)
 		if e := json.Unmarshal(b, result); e != nil {

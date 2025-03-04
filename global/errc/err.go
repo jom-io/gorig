@@ -1,73 +1,73 @@
 package errc
 
 const (
-	//系统部分
-	ErrorsSystemError               string = "系统错误,请联系管理员"
-	ErrorsContainerKeyAlreadyExists string = "该键已经注册在容器中了"
-	ErrorsPublicNotExists           string = "public 目录不存在"
-	ErrorsConfigYamlNotExists       string = "config.yml 配置文件不存在"
-	ErrorsConfigGormNotExists       string = "gorm_v2.yml 配置文件不存在"
-	ErrorsStorageLogsNotExists      string = "storage/logs 目录不存在"
-	ErrorsConfigInitFail            string = "初始化配置文件发生错误"
-	ErrorsSoftLinkCreateFail        string = "自动创建软连接失败,请以管理员身份运行客户端(开发环境为goland等，生产环境检查命令执行者权限), " +
-		"最后一个可能：如果您是360用户，请退出360相关软件，才能保证go语言创建软连接函数： os.Symlink() 正常运行"
-	ErrorsSoftLinkDeleteFail string = "删除软软连接失败"
+	// System part
+	ErrorsSystemError               string = "System error, please contact the administrator"
+	ErrorsContainerKeyAlreadyExists string = "The key has already been registered in the container"
+	ErrorsPublicNotExists           string = "public directory does not exist"
+	ErrorsConfigYamlNotExists       string = "config.yml configuration file does not exist"
+	ErrorsConfigGormNotExists       string = "gorm_v2.yml configuration file does not exist"
+	ErrorsStorageLogsNotExists      string = "storage/logs directory does not exist"
+	ErrorsConfigInitFail            string = "Error initializing configuration file"
+	ErrorsSoftLinkCreateFail        string = "Failed to create soft link automatically, please run the client as an administrator (development environment is goland, production environment check the command executor permissions), " +
+		"last possibility: if you are a 360 user, please exit the 360 related software to ensure that the go language creates soft link function: os.Symlink() runs normally"
+	ErrorsSoftLinkDeleteFail string = "Failed to delete soft link"
 
-	ErrorsFuncEventAlreadyExists string = "注册函数类事件失败，键名已经被注册"
-	ErrorsFuncEventNotRegister   string = "没有找到键名对应的函数"
-	ErrorsFuncEventNotCall       string = "注册的函数无法正确执行"
-	ErrorsBasePath               string = "初始化项目根目录失败"
-	ErrorsTokenBaseInfo          string = "token最基本的格式错误,请提供一个有效的token!"
-	ErrorsNoAuthorization        string = "token鉴权未通过，请通过token授权接口重新获取token,"
-	ErrorsRefreshTokenFail       string = "token不符合刷新条件,请通过登陆接口重新获取token!"
-	ErrorsParseTokenFail         string = "解析token失败"
-	ErrorsDBInitFail             string = "%s 数据库驱动、连接初始化失败"
-	ErrorsCasbinNoAuthorization  string = "Casbin 鉴权未通过，请在后台检查 casbin 设置参数"
+	ErrorsFuncEventAlreadyExists string = "Failed to register function event, key name has already been registered"
+	ErrorsFuncEventNotRegister   string = "No function found corresponding to the key name"
+	ErrorsFuncEventNotCall       string = "The registered function cannot be executed correctly"
+	ErrorsBasePath               string = "Failed to initialize project root directory"
+	ErrorsTokenBaseInfo          string = "The most basic format error of the token, please provide a valid token!"
+	ErrorsNoAuthorization        string = "Token authentication failed, please re-acquire the token through the token authorization interface,"
+	ErrorsRefreshTokenFail       string = "The token does not meet the refresh conditions, please re-acquire the token through the login interface!"
+	ErrorsParseTokenFail         string = "Failed to parse token"
+	ErrorsDBInitFail             string = "%s Database driver, connection initialization failed"
+	ErrorsCasbinNoAuthorization  string = "Casbin authentication failed, please check the casbin setting parameters in the background"
 	ErrorsNotInitGlobalPointer   string = "%s db connection not initialized"
-	// 数据库部分
-	ErrorsDbDriverNotExists        string = "数据库驱动类型不存在,目前支持的数据库类型：mysql、sqlserver、postgresql，您提交数据库类型："
-	ErrorsDialectorDbInitFail      string = "gorm dialector 初始化失败,dbType:"
-	ErrorsGormDBCreateParamsNotPtr string = "gorm Create 函数的参数必须是一个指针"
-	ErrorsGormDBUpdateParamsNotPtr string = "gorm 的 Update、Save 函数的参数必须是一个指针(为了完美支持 gorm 的所有回调函数,请在参数前面添加 & )"
-	//redis部分
-	ErrorsRedisInitConnFail string = "初始化redis连接池失败"
-	ErrorsRedisAuthFail     string = "Redis Auth 鉴权失败，密码错误"
-	ErrorsRedisGetConnFail  string = "Redis 从连接池获取一个连接失败，超过最大重试次数"
-	// 表单参数验证器未通过时的错误
-	ErrorsValidatorNotExists      string = "不存在的验证器"
-	ErrorsValidatorTransInitFail  string = "validator的翻译器初始化错误"
-	ErrorNotAllParamsIsBlank      string = "该接口不允许所有参数都为空,请按照接口要求提交必填参数"
-	ErrorsValidatorBindParamsFail string = "验证器绑定参数失败"
+	// Database part
+	ErrorsDbDriverNotExists        string = "Database driver type does not exist, currently supported database types: mysql, sqlserver, postgresql, the database type you submitted:"
+	ErrorsDialectorDbInitFail      string = "gorm dialector initialization failed, dbType:"
+	ErrorsGormDBCreateParamsNotPtr string = "The parameter of gorm Create function must be a pointer"
+	ErrorsGormDBUpdateParamsNotPtr string = "The parameters of gorm's Update, Save functions must be pointers (to perfectly support all callback functions of gorm, please add & before the parameter)"
+	// Redis part
+	ErrorsRedisInitConnFail string = "Failed to initialize redis connection pool"
+	ErrorsRedisAuthFail     string = "Redis Auth authentication failed, wrong password"
+	ErrorsRedisGetConnFail  string = "Failed to get a connection from the redis connection pool, exceeded the maximum retry count"
+	// Form parameter validator errors
+	ErrorsValidatorNotExists      string = "Validator does not exist"
+	ErrorsValidatorTransInitFail  string = "Error initializing validator translator"
+	ErrorNotAllParamsIsBlank      string = "This interface does not allow all parameters to be empty, please submit the required parameters according to the interface requirements"
+	ErrorsValidatorBindParamsFail string = "Failed to bind parameters to validator"
 
-	//token部分
+	// Token part
 	ErrorsTokenInvalid          string = "Invalid token"
 	ErrorsTokenNotActiveYet     string = "Token is not valid yet"
 	ErrorsTokenMalFormed        string = "Token is malformed"
-	ErrorsTokenPermissionDenied string = "权限不足"
+	ErrorsTokenPermissionDenied string = "Insufficient permissions"
 
-	ErrorsServicePermissionDenied string = "服务权限不足"
+	ErrorsServicePermissionDenied string = "Insufficient service permissions"
 
-	//snowflake
-	ErrorsSnowflakeGetIdFail string = "获取snowflake唯一ID过程发生错误"
-	// websocket
-	ErrorsWebsocketOnOpenFail                 string = "websocket onopen 发生阶段错误"
-	ErrorsWebsocketUpgradeFail                string = "websocket Upgrade 协议升级, 发生错误"
-	ErrorsWebsocketReadMessageFail            string = "websocket ReadPump(实时读取消息)协程出错"
-	ErrorsWebsocketBeatHeartFail              string = "websocket BeatHeart心跳协程出错"
-	ErrorsWebsocketBeatHeartsMoreThanMaxTimes string = "websocket BeatHeart 失败次数超过最大值"
-	ErrorsWebsocketSetWriteDeadlineFail       string = "websocket  设置消息写入截止时间出错"
-	ErrorsWebsocketWriteMgsFail               string = "websocket  Write Msg(send msg) 失败"
-	ErrorsWebsocketStateInvalid               string = "websocket  state 状态已经不可用(掉线、卡死等愿意，造成双方无法进行数据交互)"
-	// rabbitMq
-	ErrorsRabbitMqReconnectFail string = "RabbitMq消费者端掉线后重连失败，超过尝试最大次数"
+	// Snowflake
+	ErrorsSnowflakeGetIdFail string = "Error occurred while getting snowflake unique ID"
+	// WebSocket
+	ErrorsWebsocketOnOpenFail                 string = "Error occurred during websocket onopen phase"
+	ErrorsWebsocketUpgradeFail                string = "Error occurred during websocket Upgrade protocol upgrade"
+	ErrorsWebsocketReadMessageFail            string = "Error occurred in websocket ReadPump (real-time message reading) coroutine"
+	ErrorsWebsocketBeatHeartFail              string = "Error occurred in websocket BeatHeart heartbeat coroutine"
+	ErrorsWebsocketBeatHeartsMoreThanMaxTimes string = "Websocket BeatHeart failed more than the maximum number of times"
+	ErrorsWebsocketSetWriteDeadlineFail       string = "Error setting websocket message write deadline"
+	ErrorsWebsocketWriteMgsFail               string = "Websocket Write Msg (send msg) failed"
+	ErrorsWebsocketStateInvalid               string = "Websocket state is no longer available (disconnected, stuck, etc., causing both parties to be unable to interact)"
+	// RabbitMQ
+	ErrorsRabbitMqReconnectFail string = "RabbitMQ consumer failed to reconnect after disconnection, exceeded the maximum number of attempts"
 
-	//文件上传
-	ErrorsFilesUploadOpenFail string = "打开文件失败，详情："
-	ErrorsFilesUploadReadFail string = "读取文件32字节失败，详情："
+	// File upload
+	ErrorsFilesUploadOpenFail string = "Failed to open file, details:"
+	ErrorsFilesUploadReadFail string = "Failed to read 32 bytes of file, details:"
 
-	// casbin 初始化可能的错误
-	ErrorCasbinCanNotUseDbPtr         string = "casbin 的初始化基于gorm 初始化后的数据库连接指针，程序检测到 gorm 连接指针无效，请检查数据库配置！"
-	ErrorCasbinCreateAdaptFail        string = "casbin NewAdapterByDBUseTableName 发生错误："
-	ErrorCasbinCreateEnforcerFail     string = "casbin NewEnforcer 发生错误："
-	ErrorCasbinNewModelFromStringFail string = "NewModelFromString 调用时出错："
+	// Casbin initialization possible errors
+	ErrorCasbinCanNotUseDbPtr         string = "Casbin initialization is based on the gorm initialized database connection pointer, the program detected that the gorm connection pointer is invalid, please check the database configuration!"
+	ErrorCasbinCreateAdaptFail        string = "Error occurred in casbin NewAdapterByDBUseTableName:"
+	ErrorCasbinCreateEnforcerFail     string = "Error occurred in casbin NewEnforcer:"
+	ErrorCasbinNewModelFromStringFail string = "Error occurred in NewModelFromString call:"
 )

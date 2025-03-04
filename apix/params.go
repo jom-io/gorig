@@ -428,7 +428,6 @@ func getParamItem(ctx *gin.Context, key string, force Forcible, defValue ...stri
 }
 
 func GetParamStr(ctx *gin.Context, key string, defValue ...string) (value string, err *errors.Error) {
-	// 如果defValue没有值，返回空字符串
 	if len(defValue) == 0 {
 		defValue = append(defValue, "")
 	}

@@ -13,7 +13,6 @@ func (c ConType) String() string {
 }
 
 func (c *Con) GetConType() ConType {
-	// 默认mysql
 	if c.ConType == "" {
 		return Mysql
 	}

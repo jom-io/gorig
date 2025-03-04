@@ -13,13 +13,10 @@ var SimpleTool = func(ctx *gin.Context) *Tool[any] {
 
 func init() {
 
-	// 创建一级缓存（go-cache） 10分钟过期，清理间隔5分钟
 	l1Cache := NewGoCache[any](10*time.Minute, 5*time.Minute)
 
-	// 构建缓存层级
 	caches = []Cache[any]{l1Cache}
 
-	// 创建二级缓存（Redis）
 	l2Cache := GetRedisInstance[any]()
 	if l2Cache != nil {
 		caches = append(caches, l2Cache)

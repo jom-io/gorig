@@ -30,8 +30,6 @@ func UseDbConn(dbname string) *gorm.DB {
 		logger.Logger.Error(fmt.Sprintf(errc.ErrorsDBInitFail))
 		return nil
 	}
-	//GormDbMysqlMap 如果在配置文件中配置了多个数据库连接，可以通过这个map来获取
-	// 校验是否存在该数据库连接
 	dbname = strings.ToLower(dbname)
 	if _, ok := gormDbMysqlMap[dbname]; !ok {
 		logger.Logger.Error(fmt.Sprintf(errc.ErrorsNotInitGlobalPointer, dbname))
@@ -45,7 +43,6 @@ func (*gormDBService) Start() error {
 	sub := configure.GetSub("Mysql")
 	if len(sub) > 0 {
 		for k, _ := range sub {
-			// 读取配置中的IsInitGlobalGormMysql字段
 			if configure.GetInt("Mysql."+k+".GormInit") == 1 {
 				sys.Info(" * Init mysql db: ", k)
 				initMysqlDB(k)
@@ -63,9 +60,7 @@ func (*gormDBService) Migrate(con *Con, tableName string, value ConTable, indexL
 		sys.Error("AutoMigrate error", err)
 		logger.Logger.Fatal("AutoMigrate error", zap.Error(err))
 	}
-	// 如果索引不存在则创建索引
 	for _, v := range indexList {
-		// 查询索引是否存在
 		var count int64
 		con.Raw("SELECT count(1) FROM information_schema.STATISTICS WHERE table_schema = ? AND table_name = ? AND index_name = ?", con.Migrator().CurrentDatabase(), tableName, v.IdxName).Count(&count)
 		if count == 0 {
@@ -82,23 +77,6 @@ func (*gormDBService) Migrate(con *Con, tableName string, value ConTable, indexL
 			con.Exec(sql)
 		}
 	}
-
-	// 删除create_at和update_at字段
-	//con.Exec("ALTER TABLE `" + tableName + "` DROP COLUMN `create_at`")
-	//con.Exec("ALTER TABLE `" + tableName + "` DROP COLUMN `update_at`")
-	// 如果字段类型不是datetime(0)则修改字段类型
-	// 查询目前该表的字段类型
-	//var columnType string
-	//db.Raw("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE table_schema = ? AND table_name = ? AND column_name = ?", db.Migrator().CurrentDatabase(), tableName, "created_at").Scan(&columnType)
-	//if columnType != "datetime(0)" {
-	//	logger.Info(nil, "AutoMigrate Change created_at, columnType: "+columnType)
-	//	db.Exec("ALTER TABLE `" + tableName + "` CHANGE `created_at` `created_at` DATETIME(0)  NULL  DEFAULT NULL;")
-	//}
-	//db.Raw("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE table_schema = ? AND table_name = ? AND column_name = ?", db.Migrator().CurrentDatabase(), tableName, "updated_at").Scan(&columnType)
-	//if columnType != "datetime(0)" {
-	//	logger.Info(nil, "AutoMigrate Change updated_at")
-	//	db.Exec("ALTER TABLE `" + tableName + "` CHANGE `updated_at` `updated_at` DATETIME(0)  NULL  DEFAULT NULL;")
-	//}
 
 	return nil
 }
@@ -145,7 +123,7 @@ func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...
 		tx = c.DB.Table(c.TableName()).Create(data)
 	} else {
 		if version != nil && len(version) > 0 && version[0] > 0 {
-			tx = c.DB.Table(c.TableName()).Updates(data)
+			tx = c.DB.Table(c.TableName()).Where("id", data.GetID()).Updates(data)
 		} else {
 			if eg := c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Count(&id); eg.Error != nil {
 				return 0, eg.Error
@@ -153,7 +131,7 @@ func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...
 			if id == 0 {
 				tx = c.DB.Table(c.TableName()).Create(data)
 			} else {
-				tx = c.DB.Table(c.TableName()).Updates(data)
+				tx = c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Updates(data)
 			}
 		}
 		//tx = c.DB.Table(c.TableName()).Save(data)

@@ -1,76 +1,76 @@
 package consts
 
-// 这里定义的常量，一般是具有错误代码+错误说明组成，一般用于接口返回
+// The constants defined here generally consist of error codes and error descriptions, usually used for interface returns
 const (
-	// 进程被结束
-	ProcessKilled string = "收到信号，进程被结束"
-	// 表单验证器前缀
+	// Process terminated
+	ProcessKilled string = "Received signal, process terminated"
+	// Form validator prefix
 	ValidatorPrefix              string = "Form_Validator_"
 	ValidatorParamsCheckFailCode int    = -400300
-	ValidatorParamsCheckFailMsg  string = "参数校验失败"
+	ValidatorParamsCheckFailMsg  string = "Parameter validation failed"
 
-	//服务器代码发生错误
+	// Server code error
 	ServerOccurredErrorCode int    = -500100
-	ServerOccurredErrorMsg  string = "服务器内部发生代码执行错误, "
-	GinSetTrustProxyError   string = "Gin 设置信任代理服务器出错"
+	ServerOccurredErrorMsg  string = "System error"
+	GinSetTrustProxyError   string = "Gin set trust proxy server error"
 
-	// token相关
-	JwtTokenOK            int    = 200100                  //token有效
-	JwtTokenInvalid       int    = -400100                 //无效的token
-	JwtTokenExpired       int    = -400101                 //过期的token
-	JwtTokenFormatErrCode int    = -400102                 //提交的 token 格式错误
-	JwtTokenFormatErrMsg  string = "提交的 token 格式错误"        //提交的 token 格式错误
-	JwtTokenMustValid     string = "token must be valid, " //token 必须有效
+	// Token related
+	JwtTokenOK            int    = 200100                         // Token valid
+	JwtTokenInvalid       int    = -400100                        // Invalid token
+	JwtTokenExpired       int    = -400101                        // Expired token
+	JwtTokenFormatErrCode int    = -400102                        // Submitted token format error
+	JwtTokenFormatErrMsg  string = "Submitted token format error" // Submitted token format error
+	JwtTokenMustValid     string = "Token must be valid, "        // Token must be valid
 
-	//SnowFlake 雪花算法
-	StartTimeStamp = int64(1483228800000) //开始时间截 (2017-01-01)
-	MachineIdBits  = uint(10)             //机器id所占的位数
-	SequenceBits   = uint(12)             //序列所占的位数
-	//MachineIdMax   = int64(-1 ^ (-1 << MachineIdBits)) //支持的最大机器id数量
+	// SnowFlake algorithm
+	StartTimeStamp = int64(1483228800000) // Start timestamp (2017-01-01)
+	MachineIdBits  = uint(10)             // Number of bits occupied by machine id
+	SequenceBits   = uint(12)             // Number of bits occupied by sequence
+	// MachineIdMax   = int64(-1 ^ (-1 << MachineIdBits)) // Maximum number of supported machine ids
 	SequenceMask   = int64(-1 ^ (-1 << SequenceBits)) //
-	MachineIdShift = SequenceBits                     //机器id左移位数
-	TimestampShift = SequenceBits + MachineIdBits     //时间戳左移位数
+	MachineIdShift = SequenceBits                     // Machine id left shift bits
+	TimestampShift = SequenceBits + MachineIdBits     // Timestamp left shift bits
 
-	// CURD 常用业务状态码
+	// CURD common business status codes
 	CurdStatusOkCode         int    = 200
 	CurdStatusOkMsg          string = "Success"
 	CurdCreatFailCode        int    = -400200
-	CurdCreatFailMsg         string = "新增失败"
+	CurdCreatFailMsg         string = "Creation failed"
 	CurdUpdateFailCode       int    = -400201
-	CurdUpdateFailMsg        string = "更新失败"
+	CurdUpdateFailMsg        string = "Update failed"
 	CurdDeleteFailCode       int    = -400202
-	CurdDeleteFailMsg        string = "删除失败"
+	CurdDeleteFailMsg        string = "Deletion failed"
 	CurdSelectFailCode       int    = -400203
-	CurdSelectFailMsg        string = "查询无数据"
+	CurdSelectFailMsg        string = "No data found"
 	CurdRegisterFailCode     int    = -400204
-	CurdRegisterFailMsg      string = "注册失败"
+	CurdRegisterFailMsg      string = "Registration failed"
 	CurdLoginFailCode        int    = -400205
-	CurdLoginFailMsg         string = "登录失败"
+	CurdLoginFailMsg         string = "Login failed"
 	CurdRefreshTokenFailCode int    = -400206
-	CurdRefreshTokenFailMsg  string = "刷新Token失败"
+	CurdRefreshTokenFailMsg  string = "Token refresh failed"
 
-	//文件上传
+	// File upload
 	FilesUploadFailCode            int    = -400250
-	FilesUploadFailMsg             string = "文件上传失败, 获取上传文件发生错误!"
+	FilesUploadFailMsg             string = "File upload failed, error getting uploaded file!"
 	FilesUploadMoreThanMaxSizeCode int    = -400251
-	FilesUploadMoreThanMaxSizeMsg  string = "长传文件超过系统设定的最大值,系统允许的最大值："
+	FilesUploadMoreThanMaxSizeMsg  string = "Uploaded file exceeds the maximum size allowed by the system, maximum size allowed by the system:"
 	FilesUploadMimeTypeFailCode    int    = -400252
-	FilesUploadMimeTypeFailMsg     string = "文件mime类型不允许"
+	FilesUploadMimeTypeFailMsg     string = "File mime type not allowed"
 
-	//websocket
+	// WebSocket
 	WsServerNotStartCode int    = -400300
-	WsServerNotStartMsg  string = "websocket 服务没有开启，请在配置文件开启，相关路径：config/config.yml"
+	WsServerNotStartMsg  string = "WebSocket service not started, please enable it in the configuration file, related path: config/config.yml"
 	WsOpenFailCode       int    = -400301
-	WsOpenFailMsg        string = "websocket open阶段初始化基本参数失败"
+	WsOpenFailMsg        string = "WebSocket open phase initialization of basic parameters failed"
 
-	//验证码
-	CaptchaGetParamsInvalidMsg    string = "获取验证码：提交的验证码参数无效,请检查验证码ID以及文件名后缀是否完整"
+	// Captcha
+	CaptchaGetParamsInvalidMsg    string = "Get captcha: submitted captcha parameters are invalid, please check if the captcha ID and file name suffix are complete"
 	CaptchaGetParamsInvalidCode   int    = -400350
-	CaptchaCheckParamsInvalidMsg  string = "校验验证码：提交的参数无效，请检查 【验证码ID、验证码值】 提交时的键名是否与配置项一致"
+	CaptchaCheckParamsInvalidMsg  string = "Check captcha: submitted parameters are invalid, please check if the key names of the submitted captcha ID and captcha value are consistent with the configuration items"
 	CaptchaCheckParamsInvalidCode int    = -400351
-	CaptchaCheckOkMsg             string = "验证码校验通过"
+	CaptchaCheckOkMsg             string = "Captcha check passed"
 	CaptchaCheckFailCode          int    = -400355
-	CaptchaCheckFailMsg           string = "验证码校验失败"
+	CaptchaCheckFailMsg           string = "Captcha check failed"
 )
 
 const NotNull = "not_null"

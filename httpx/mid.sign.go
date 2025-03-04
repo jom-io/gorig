@@ -14,7 +14,6 @@ type HeaderParams struct {
 	Authorization string `header:"Authorization" binding:"required,min=20"`
 }
 
-// 校验token
 func SignDef() gin.HandlerFunc {
 	return sign(tokenx.Memory, nil)
 }
@@ -23,7 +22,6 @@ func SignRedis() gin.HandlerFunc {
 	return sign(tokenx.Redis, nil)
 }
 
-// SignUserDef 校验token并校验用户 map用于校验用户信息是否符合要求
 func SignUserDef(userFilter map[string]interface{}) gin.HandlerFunc {
 	return sign(tokenx.Memory, userFilter)
 }

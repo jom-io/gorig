@@ -274,7 +274,7 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ..
 				return 0, mErr
 			}
 			if one.InsertedID == nil {
-				return 0, errors.Sys("插入失败")
+				return 0, errors.Sys("Insert error")
 			}
 			return c.ID, nil
 		}
@@ -421,7 +421,7 @@ func matchMongoCond(matchList []Match) map[string]interface{} {
 		case NearLoc:
 			near := match.ToNearMatch()
 			if near.Distance == 0 {
-				near.Distance = 5000 * 1000 // 默认距离设为5000km
+				near.Distance = 5000 * 1000 // default 5000km
 			}
 			condMap["$near"] = bson.M{
 				"$geometry": bson.M{

@@ -42,7 +42,7 @@ func GetLastID[T Identifiable](conList []T) int64 {
 func (c *Con) MustGetDB() (any, *errors.Error) {
 	db := c.GetDB()
 	if db == nil {
-		return nil, errors.Sys("数据库连接失败")
+		return nil, errors.Sys("DB connection failed")
 	}
 	return db, nil
 }
