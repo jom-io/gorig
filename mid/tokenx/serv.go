@@ -1,7 +1,7 @@
 package tokenx
 
 import (
-	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/global/variable"
 	"github.com/jom-io/gorig/utils/errors"
 )
 
@@ -20,7 +20,7 @@ const (
 
 const defSigning = "github.com/jom-io/gorig"
 
-const defExpire = 3600 * 24 * 3 // 默认过期时间 3天
+const defExpire = 3600 * 24 * 3
 
 type TokenGenerator interface {
 	Generate(userId string, userInfo map[string]interface{}, expireAt int64) (tokens string, err *errors.Error)
@@ -35,7 +35,7 @@ type TokenManager interface {
 	Refresh(oldToken, newToken string) bool
 	IsEffective(token string) bool
 	Destroy(token string)
-	GetUserID(token string) (userID string, exisit bool)
+	GetUserID(token string) (userID string, exist bool)
 	CleanAll()
 	Clean(userId string)
 }
@@ -58,10 +58,18 @@ func Get(generatorType GeneratorType, managerType ManagerType) *TokenService {
 }
 
 func getGenerator(generatorType GeneratorType) TokenGenerator {
+	sign := variable.JwtKey
+	if sign == "" {
+		sign = variable.SysName
+	}
+	if sign == "" {
+		sign = defSigning
+	}
+
 	switch generatorType {
 	case Jwt:
 		return &jwtGenerator{
-			SigningKey: []byte(configure.GetString("Jwt.SigningKey", defSigning)),
+			SigningKey: []byte(sign),
 		}
 	}
 	return nil

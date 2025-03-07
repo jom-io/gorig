@@ -33,15 +33,13 @@ type memoryImpl struct {
 
 func init() {
 	sys.Info(" # Tokenx: Memory Token Manager")
-	// 初始化时加载本地token
 	loadLocalTokens()
 
-	// 捕获终止信号，并在程序退出时保存token
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		logger.Info(nil, fmt.Sprintf("接收到信号:%v", sig))
+		logger.Info(nil, fmt.Sprintf("received signal:%v", sig))
 		saveLocalTokens()
 		os.Exit(0)
 	}()
@@ -61,60 +59,51 @@ func init() {
 	}()
 }
 
-// loadLocalTokens 从本地文件中加载tokens
 func loadLocalTokens() {
-	// 如果没有的话，创建一个空的文件
 	if _, err := os.Stat(localTokensFile); os.IsNotExist(err) {
 		file, e := os.Create(localTokensFile)
 		if e != nil {
-			logger.Error(nil, fmt.Sprintf("创建文件时发生错误:%v", e))
-		}
-		file.Close()
-		return
-	}
-	// 打开文件
-	file, err := os.Open(localTokensFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			logger.Info(nil, "文件不存在，使用空的token映射")
+			logger.Error(nil, fmt.Sprintf("Create file error:%v", e))
+			file.Close()
 			return
 		}
-		logger.Error(nil, fmt.Sprintf("打开文件时发生错误:%v", err))
-		return
-	}
-	defer file.Close()
-
-	// 读取文件内容
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		logger.Error(nil, fmt.Sprintf("读取文件内容时发生错误:%v", err))
-		return
-	}
-	if len(data) == 0 {
-		return
-	}
-	//logger.Info(nil, fmt.Sprintf("加载token状态数据:%s", data))
-
-	mapData := make(map[string]*tokenInfo)
-	// 解析JSON内容
-	err = json.Unmarshal(data, &mapData)
-	if err != nil {
-		logger.Error(nil, fmt.Sprintf("解析JSON内容时发生错误:%v", err))
-		// 清除tokens文件
-		err = os.Remove(localTokensFile)
+		file, err := os.Open(localTokensFile)
 		if err != nil {
-			logger.Error(nil, fmt.Sprintf("删除文件时发生错误:%v", err))
+			if os.IsNotExist(err) {
+				logger.Info(nil, "Tokens file not exist use default tokens")
+				return
+			}
+			logger.Error(nil, fmt.Sprintf("Open file error:%v", err))
+			return
 		}
-		logger.Info(nil, "已删除文件")
+		defer file.Close()
+
+		data, err := ioutil.ReadAll(file)
+		if err != nil {
+			logger.Error(nil, fmt.Sprintf("Read file error:%v", err))
+			return
+		}
+		if len(data) == 0 {
+			return
+		}
+
+		mapData := make(map[string]*tokenInfo)
+		err = json.Unmarshal(data, &mapData)
+		if err != nil {
+			logger.Error(nil, fmt.Sprintf("Parse JSON error:%v", err))
+			err = os.Remove(localTokensFile)
+			if err != nil {
+				logger.Error(nil, fmt.Sprintf("Delete file error:%v", err))
+				logger.Info(nil, "Deleted tokens file")
+			}
+			for k, v := range mapData {
+				tokenMap.Store(k, v)
+			}
+			logger.Info(nil, fmt.Sprintf("Loaded tokens:%v", mapData))
+		}
 	}
-	for k, v := range mapData {
-		tokenMap.Store(k, v)
-	}
-	// 打印tokenMap
-	logger.Info(nil, fmt.Sprintf("加载token状态数据:%v", len(mapData)))
 }
 
-// saveLocalTokens 将tokens保存到本地文件 原理：定义一个长度为1的channel，当有goroutine在保存文件时，其他goroutine会被阻塞
 var saveLock = make(chan struct{}, 1)
 
 func tokenLen() int {
@@ -132,13 +121,10 @@ func saveLocalTokens() {
 		<-saveLock
 	}()
 
-	// tokens换为tokenMap
-	//logger.Info(nil, fmt.Sprintf("当前token数量:%d", tokenLen()))
 	if tokenLen() == 0 {
 		return
 	}
 
-	// 将tokenMap转换为Map
 	mapData := make(map[string]*tokenInfo)
 	tokenMap.Range(func(key, value interface{}) bool {
 		mapData[key.(string)] = value.(*tokenInfo)
@@ -146,22 +132,20 @@ func saveLocalTokens() {
 	})
 
 	data, err := json.Marshal(mapData)
-	//logger.Info(nil, fmt.Sprintf("保存token状态数据:%s", string(data)))
 	if err != nil {
-		logger.Error(nil, fmt.Sprintf("转换为JSON时发生错误:%v", err))
+		logger.Error(nil, fmt.Sprintf("Convert to JSON error:%v", err))
 		return
 	}
 
 	// 写入文件
 	err = ioutil.WriteFile(localTokensFile, data, 0644)
 	if err != nil {
-		logger.Error(nil, fmt.Sprintf("写入文件时发生错误:%v", err))
-	}
+		logger.Error(nil, fmt.Sprintf("Write file error:%v", err))
 
-	logger.Info(nil, fmt.Sprintf("保存token状态数据:%v", len(mapData)))
+		logger.Info(nil, fmt.Sprintf("Saved tokens:%v", mapData))
+	}
 }
 
-// 创建一个token锁 用于防止并发刷新token
 var tokenLock = sync.Map{}
 
 func getTokenLock(token string) *sync.Mutex {
@@ -175,10 +159,9 @@ func getTokenLock(token string) *sync.Mutex {
 
 // GetUserID
 func (u *memoryImpl) GetUserID(token string) (userID string, exisit bool) {
-	// 如果有panic，打印
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error(nil, fmt.Sprintf("获取用户ID时发生错误:%v", err))
+			logger.Error(nil, fmt.Sprintf("GetUserID panic:%v", err))
 		}
 	}()
 	lock := getTokenLock(token)
@@ -188,16 +171,13 @@ func (u *memoryImpl) GetUserID(token string) (userID string, exisit bool) {
 		tokenLock.Delete(token)
 	}()
 
-	// 如果tokenMap为空，加载本地token
 	if tokenLen() == 0 {
 		loadLocalTokens()
 	}
 	value, exisitGet := tokenMap.Load(token)
 	if exisitGet {
 		userInfo := value.(*tokenInfo)
-		// 判断token是否过期
 		if userInfo != nil && userInfo.ExpiresAt < time.Now().Unix() {
-			// 过期删除
 			u.Destroy(token)
 			return "", false
 		}
@@ -205,7 +185,6 @@ func (u *memoryImpl) GetUserID(token string) (userID string, exisit bool) {
 		if time.Now().Unix()+int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))-userInfo.ExpiresAt <= 1 {
 			return userInfo.UserID, true
 		}
-		//logger.Info(nil, fmt.Sprintf("刷新token过期时间:%v", userInfo))
 		if userInfo != nil {
 			userInfo.ExpiresAt = time.Now().Unix() + int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
 			tokenMap.Store(token, userInfo)
@@ -225,7 +204,6 @@ func getUserType(userInfo map[string]interface{}) string {
 }
 
 func (u *memoryImpl) GenerateAndRecord(userId string, userInfo map[string]interface{}, expireAt int64) (token string, err *errors.Error) {
-	// 如果userID和同类型的userInfo已经存在，那么直接返回
 	logger.Info(nil, fmt.Sprintf("GenerateAndRecord userId:%s userInfo:%v expireAt:%d", userId, userInfo, expireAt))
 	if expireAt < time.Now().Unix() {
 		expireAt = time.Now().Unix() + int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
@@ -252,7 +230,6 @@ func (u *memoryImpl) Record(userToken string, userInfo map[string]interface{}) b
 	if customClaims, err := u.generator.Parse(userToken); err == nil {
 		userId := customClaims.UserId
 		//expiresAt := customClaims.ExpiresAt
-		// 将token存储到全局变量中 variable.Tokens中 如果有redis则存储到redis中
 		expireAt := time.Now().Unix() + int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
 		tokenMap.Store(userToken, &tokenInfo{UserID: userId, UserType: getUserType(userInfo), ExpiresAt: expireAt})
 		//logger.Info(nil, fmt.Sprintf("Record userToken:%s userId:%s userInfo:%v expireAt:%d", userToken, userId, userInfo, expireAt))
@@ -269,7 +246,6 @@ func (u *memoryImpl) IsMeetRefresh(token string) bool {
 	switch code {
 	case consts.JwtTokenOK, consts.JwtTokenExpired:
 		return true
-		//在数据库的存储信息是否也符合过期刷新刷新条件
 		//if model.CreateUserFactory("").OauthRefreshConditionCheck(customClaims.UserId, token) {
 		//	return true
 		//}
@@ -277,9 +253,7 @@ func (u *memoryImpl) IsMeetRefresh(token string) bool {
 	return false
 }
 
-// Refresh 刷新token的有效期（默认+3600秒，参见常量配置项）
 func (u *memoryImpl) Refresh(oldToken string, newToken string) (res bool) {
-	//如果token是有效的、或者在过期时间内，那么执行更新，换取新token
 	if customClaims, err := u.generator.Parse(oldToken); err == nil {
 		customClaims.ExpiresAt = time.Now().Unix() + int64(configure.GetInt("Jwt.TokenRefreshExpireAt", defExpire))
 		userId := customClaims.UserId
@@ -287,32 +261,23 @@ func (u *memoryImpl) Refresh(oldToken string, newToken string) (res bool) {
 		//if model.CreateUserFactory("").OauthRefreshToken(userId, expiresAt, oldToken, newToken, clientIp) {
 		//	return newToken, true
 		//}
-		// 将旧token删除
 		//delete(tokens, oldToken)
 		tokenMap.Delete(oldToken)
-		// 将新token存储到全局变量中 variable.Tokens中 如果有redis则存储到redis中
 		tokenMap.Store(newToken, &tokenInfo{UserID: userId, UserType: getUserType(customClaims.UserInfo), ExpiresAt: customClaims.ExpiresAt})
 		return true
 	}
 	return false
 }
 
-// IsNotExpired 判断token本身是否未过期
-// 参数解释：
-// token： 待处理的token值
-// expireAtSec： 过期时间延长的秒数，主要用于用户刷新token时，判断是否在延长的时间范围内，非刷新逻辑默认为0
+// IsNotExpired
 func (u *memoryImpl) IsNotExpired(token string, expireAtSec int64) (*CustomClaims, int) {
 	if customClaims, err := u.generator.Parse(token); err == nil {
-
 		if time.Now().Unix()-(customClaims.ExpiresAt+expireAtSec) < 0 {
-			// token有效
 			return customClaims, consts.JwtTokenOK
 		} else {
-			// 过期的token
 			return customClaims, consts.JwtTokenExpired
 		}
 	} else {
-		// 无效的token
 		return nil, consts.JwtTokenInvalid
 	}
 }
@@ -339,18 +304,15 @@ func (u *memoryImpl) IsEffective(token string) bool {
 	return false
 }
 
-// Destroy 销毁token，基本用不到，因为一个网站的用户退出都是直接关闭浏览器窗口，极少有户会点击“注销、退出”等按钮，销毁token其实无多大意义
 func (u *memoryImpl) Destroy(token string) {
 	logger.Info(nil, fmt.Sprintf("Destroy token:%s", token))
 	tokenMap.Delete(token)
 }
 
-// CleanAll 清除所有token
 func (u *memoryImpl) CleanAll() {
 	tokenMap = sync.Map{}
 }
 
-// Clean 清除某个用户的所有token
 func (u *memoryImpl) Clean(userId string) {
 	tokenMap.Range(func(key, value interface{}) bool {
 		userInfoGet := value.(*tokenInfo)

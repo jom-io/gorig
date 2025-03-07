@@ -16,13 +16,11 @@ func (j *jwtGenerator) Generate(userId string, userInfo map[string]interface{}, 
 		UserId:   userId,
 		UserInfo: userInfo,
 		StandardClaims: jwt.StandardClaims{
-			NotBefore: time.Now().Unix() - 10,       // 生效开始时间
-			ExpiresAt: time.Now().Unix() + expireAt, // 失效截止时间
+			NotBefore: time.Now().Unix() - 10,
+			ExpiresAt: time.Now().Unix() + expireAt,
 		},
 	}
-	// 生成jwt格式的header、claims 部分
 	tokenPartA := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// 继续添加秘钥值，生成最后一部分
 	if signedString, sinErr := tokenPartA.SignedString(j.SigningKey); sinErr == nil {
 		return signedString, nil
 	} else {
@@ -52,7 +50,6 @@ func (j *jwtGenerator) ParseToken(tokenString string) (*CustomClaims, *errors.Er
 			} else if ve.Errors&jwt.ValidationErrorNotValidYet != 0 {
 				return nil, errors.Verify(errc.ErrorsTokenNotActiveYet)
 			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
-				// 如果 TokenExpired ,只是过期（格式都正确），我们认为他是有效的，接下可以允许刷新操作
 				token.Valid = true
 				goto labelHere
 			} else {

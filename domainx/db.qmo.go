@@ -306,7 +306,7 @@ func (s *mongoDBService) DeleteByMatch(c *Con, matchList []Match) error {
 		return e
 	} else {
 		condition := matchMongoCond(matchList)
-		mErr := coll.Remove(context.Background(), mapToBsonM(condition))
+		_, mErr := coll.RemoveAll(context.Background(), mapToBsonM(condition))
 		return mErr
 	}
 }
@@ -349,7 +349,9 @@ func sortMongoFields(s []*Sort) []string {
 			sortList = append(sortList, order+prefix.ad(v.Field))
 		}
 	}
-	sortList = append(sortList, "-con.id") // 默认按id倒序
+	if len(sortList) == 0 {
+		sortList = append(sortList, "-con.id")
+	}
 	return sortList
 }
 

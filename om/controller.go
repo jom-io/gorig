@@ -5,19 +5,30 @@ import (
 	"github.com/jom-io/gorig/apix"
 	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/om/logtool"
+	"github.com/jom-io/gorig/om/user"
 )
 
-func AllCat(ctx *gin.Context) {
+func login(ctx *gin.Context) {
+	defer apix.HandlePanic(ctx)
+	pwd, e := apix.GetParamType[string](ctx, "pwd", apix.Force)
+	if e != nil {
+		return
+	}
+	result, err := user.Login(ctx, pwd)
+	apix.HandleData(ctx, consts.CurdSelectFailCode, result, err)
+}
+
+func categories(ctx *gin.Context) {
 	defer apix.HandlePanic(ctx)
 	apix.HandleData(ctx, consts.CurdSelectFailCode, &logtool.Categories, nil)
 }
 
-func AllLevel(ctx *gin.Context) {
+func levels(ctx *gin.Context) {
 	defer apix.HandlePanic(ctx)
 	apix.HandleData(ctx, consts.CurdSelectFailCode, &logtool.Levels, nil)
 }
 
-func Search(ctx *gin.Context) {
+func search(ctx *gin.Context) {
 	defer apix.HandlePanic(ctx)
 	opts := logtool.SearchOptions{}
 	e := apix.BindParams(ctx, &opts)
@@ -28,7 +39,7 @@ func Search(ctx *gin.Context) {
 	apix.HandleData(ctx, consts.CurdSelectFailCode, &result, err)
 }
 
-func Near(ctx *gin.Context) {
+func near(ctx *gin.Context) {
 	defer apix.HandlePanic(ctx)
 	path, e := apix.GetParamType[string](ctx, "path", apix.Force)
 	cenLine, e := apix.GetParamType[int64](ctx, "line", apix.Force)
@@ -40,7 +51,7 @@ func Near(ctx *gin.Context) {
 	apix.HandleData(ctx, consts.CurdSelectFailCode, &result, err)
 }
 
-func Monitor(ctx *gin.Context) {
+func monitor(ctx *gin.Context) {
 	defer apix.HandlePanic(ctx)
 	opts := logtool.SearchOptions{}
 	e := apix.BindParams(ctx, &opts)
@@ -51,7 +62,7 @@ func Monitor(ctx *gin.Context) {
 	apix.HandleData(ctx, consts.CurdSelectFailCode, nil, err)
 }
 
-func Download(ctx *gin.Context) {
+func download(ctx *gin.Context) {
 	defer apix.HandlePanic(ctx)
 	path, e := apix.GetParamType[string](ctx, "path", apix.Force)
 	if e != nil {
