@@ -12,8 +12,11 @@ func Sign() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sign := c.GetHeader("Authorization")
 		if sign == "" || !strings.HasPrefix(sign, "Bearer ") {
-			response.ErrorForbidden(c)
-			return
+			if c.Query("token") == "" {
+				response.ErrorForbidden(c)
+				return
+			}
+			sign = c.Query("token")
 		}
 		sign = strings.TrimPrefix(sign, "Bearer ")
 		get := tokenx.Get(tokenx.Jwt, tokenx.Memory)

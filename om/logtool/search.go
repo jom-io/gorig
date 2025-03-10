@@ -424,7 +424,8 @@ func readLastRecord(f *os.File) (*MatchedRecord, *errors.Error) {
 
 				dataMap := map[string]interface{}{}
 				if err := json.Unmarshal([]byte(line), &dataMap); err != nil {
-					return nil, errors.Verify(fmt.Sprintf("unable to unmarshal record: %v", err))
+					logger.Error(nil, "unmarshal record error", zap.Error(err))
+					return nil, nil
 				}
 
 				record := map2LogRecord(dataMap)
