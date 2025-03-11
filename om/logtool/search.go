@@ -17,12 +17,12 @@ import (
 	"time"
 )
 
-func ListLogFiles(opts SearchOptions) ([]string, error) {
+func ListLogFiles(opts SearchOptions) (map[string]string, error) {
 	if opts.RootDir == "" {
 		opts.RootDir = "."
 	}
 	logDir := filepath.Join(opts.RootDir, ".logs")
-	var result []string
+	result := make(map[string]string)
 
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("log dir not found: %s", logDir)
@@ -49,39 +49,44 @@ func ListLogFiles(opts SearchOptions) ([]string, error) {
 
 	for _, cat := range newCategories {
 		catDir := filepath.Join(logDir, cat)
-		err := filepath.Walk(catDir, func(path string, info fs.FileInfo, err error) error {
+		_ = filepath.Walk(catDir, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
-				return err
+				logger.Warn(nil, "skip file", zap.Error(err))
+				return nil
 			}
 			if !info.IsDir() && strings.HasSuffix(info.Name(), ".jsonl") {
-				if strings.HasPrefix(info.Name(), cat+"-") {
+				if strings.HasPrefix(info.Name(), cat) {
 					fileTime := strings.TrimSuffix(info.Name(), ".jsonl")
-					fileTime = strings.TrimPrefix(fileTime, cat+"-")
-					parseTime, e := time.Parse("2006-01-02T15-04-05.000", fileTime)
-					if e != nil {
-						return errors.Verify(fmt.Sprintf("parse file time error: %v", e))
-					}
-					if opts.StartTime != "" {
-						startTime, _ := time.Parse("2006-01-02 15:04:05", opts.StartTime)
-						if parseTime.Before(startTime) {
+					if strings.HasPrefix(fileTime, cat+"-") {
+						fileTime = strings.TrimPrefix(fileTime, cat+"-")
+						parseTime, e := time.Parse("2006-01-02T15-04-05.000", fileTime)
+						if e != nil {
+							logger.Warn(nil, "parse file time error", zap.Error(e))
 							return nil
 						}
-					}
-					if opts.EndTime != "" {
-						endTime, _ := time.Parse("2006-01-02 15:04:05", opts.EndTime)
-						if parseTime.After(endTime) {
-							return nil
+						if opts.StartTime != "" {
+							startTime, _ := time.Parse("2006-01-02 15:04:05", opts.StartTime)
+							if parseTime.Before(startTime) {
+								return nil
+							}
+						}
+						if opts.EndTime != "" {
+							endTime, _ := time.Parse("2006-01-02 15:04:05", opts.EndTime)
+							if parseTime.After(endTime) {
+								return nil
+							}
 						}
 					}
+					result[path] = info.Name()
 				}
-				result = append(result, path)
 			}
 			return nil
 		})
-		if err != nil {
-			fmt.Printf("warn: %v\n", err)
-			return nil, nil
-		}
+		//if err != nil {
+		//	logger.Warn(nil, "walk log dir error", zap.Error(err))
+		//	//fmt.Printf("warn: %v\n", err)
+		//	return nil, nil
+		//}
 	}
 
 	return result, nil
@@ -106,7 +111,7 @@ func SearchLogs(opts SearchOptions) ([]MatchedRecord, *errors.Error) {
 		startProcessing = true
 	}
 
-	for _, filePath := range files {
+	for filePath, _ := range files {
 		if !startProcessing && filePath == opts.LastPath {
 			startProcessing = true
 		}
