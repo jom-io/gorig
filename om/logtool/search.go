@@ -61,7 +61,7 @@ func ListLogFiles(opts SearchOptions) (map[string]string, error) {
 						fileTime = strings.TrimPrefix(fileTime, cat+"-")
 						parseTime, e := time.Parse("2006-01-02T15-04-05.000", fileTime)
 						if e != nil {
-							logger.Warn(nil, "parse file time error", zap.Error(e))
+							//logger.Warn(nil, "parse file time error", zap.Error(e))
 							return nil
 						}
 						if opts.StartTime != "" {
@@ -313,7 +313,7 @@ func MonitorLogs(ctx *gin.Context, opts SearchOptions) *errors.Error {
 	}
 
 	// Add files to the watcher
-	for _, file := range files {
+	for file, _ := range files {
 		err = watcher.Add(file)
 		if err != nil {
 			return errors.Verify(fmt.Sprintf("unable to add file to watcher: %v", err))
