@@ -11,7 +11,7 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/qiniu/qmgo v1.1.8
-	github.com/robfig/cron v1.2.0
+	//github.com/robfig/cron v1.2.0
 	github.com/rs/xid v1.5.0
 	github.com/spf13/cast v1.6.0
 	github.com/spf13/viper v1.18.2
@@ -23,6 +23,8 @@ require (
 	gorm.io/gorm v1.25.7
 	gorm.io/plugin/dbresolver v1.5.1
 )
+
+require golang.org/x/crypto v0.22.0
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -53,6 +55,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
@@ -68,7 +71,6 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.7.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect

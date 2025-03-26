@@ -5,7 +5,7 @@ import (
 	"github.com/jom-io/gorig/serv"
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"reflect"
 	"runtime"
@@ -37,7 +37,7 @@ func start() {
 	}
 	for _, t := range taskList {
 		sys.Info("  * Add cron job", zap.String("name", t.Name), zap.String("spec", t.Spec))
-		if err := c.AddFunc(t.Spec, t.Func); err != nil {
+		if _, err := c.AddFunc(t.Spec, t.Func); err != nil {
 			logger.Fatal(nil, "  * Add cron job failed", zap.Error(err))
 		}
 	}
