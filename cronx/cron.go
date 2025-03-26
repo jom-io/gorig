@@ -28,7 +28,7 @@ func AddTask(spec string, f func()) {
 }
 
 func init() {
-	c = cron.New()
+	c = cron.New(cron.WithSeconds())
 }
 
 func start() {
