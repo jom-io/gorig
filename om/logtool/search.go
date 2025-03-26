@@ -275,7 +275,7 @@ func FetchContextLines(filePath string, centerLine, contextRange int64) ([]Conte
 		text := scanner.Text()
 		dataMap := map[string]interface{}{}
 		if err := json.Unmarshal([]byte(text), &dataMap); err != nil {
-			logger.Error(nil, "unmarshal record error", zap.Error(err))
+			//logger.Error(nil, "unmarshal record error", zap.Error(err))
 			continue
 		}
 		rec := map2LogRecord(dataMap)
@@ -429,7 +429,7 @@ func readLastRecord(f *os.File) (*MatchedRecord, *errors.Error) {
 
 				dataMap := map[string]interface{}{}
 				if err := json.Unmarshal([]byte(line), &dataMap); err != nil {
-					logger.Error(nil, "unmarshal record error", zap.Error(err))
+					//logger.Error(nil, "unmarshal record error", zap.Error(err))
 					return nil, nil
 				}
 

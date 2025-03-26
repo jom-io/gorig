@@ -12,10 +12,28 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
 var client = &http.Client{}
+var timeOut = 120 * time.Second
+
+func getClient() *http.Client {
+	if client == nil {
+		client = &http.Client{
+			Timeout: timeOut,
+		}
+	}
+	return client
+}
+
+func SetTimeOutTmp(t time.Duration) {
+	client.Timeout = t
+	time.AfterFunc(t, func() {
+		client.Timeout = timeOut
+	})
+}
 
 func Get(baseURL string, params map[string]string) (resp string, err *errors.Error) {
 	reqURL := baseURL
@@ -58,8 +76,7 @@ func GetHeader(baseURL string, params map[string]string, header map[string]strin
 	for k, v := range header {
 		req.Header.Set(k, v)
 	}
-	client := http.Client{}
-	response, httpErr := client.Do(req)
+	response, httpErr := getClient().Do(req)
 	if httpErr != nil {
 		return "", errors.Sys(fmt.Sprintf("http.Do error: %v", httpErr))
 	}
@@ -116,7 +133,7 @@ func PostJSONResp(baseURL string, params interface{}) (resp string, err *errors.
 	}
 	logger.Info(nil, fmt.Sprintf("PostJSONResp: %s, %s", baseURL, jsonData))
 
-	response, httpErr := client.Post(baseURL, "application/json", bytes.NewReader(jsonData))
+	response, httpErr := getClient().Post(baseURL, "application/json", bytes.NewReader(jsonData))
 	if httpErr != nil { // 注意这里的错误检查修正
 		return "", errors.Sys(fmt.Sprintf("http.Post error: %v", httpErr))
 	}
@@ -149,8 +166,7 @@ func PostJSONRespHeader(baseURL string, params interface{}, header map[string]st
 			req.Header.Set(k, v)
 		}
 	}
-	client := http.Client{}
-	response, httpErr := client.Do(req)
+	response, httpErr := getClient().Do(req)
 	if httpErr != nil {
 		return "", errors.Sys(fmt.Sprintf("http.Do error: %v", httpErr))
 	}
@@ -251,7 +267,41 @@ func ParseXML[T any](xmlStr string) (*T, *errors.Error) {
 	return &result, nil
 }
 
-func init() {
-	// timeout 120s
-	client.Timeout = 120 * time.Second
+// FetchImage fetches image from url
+func FetchImage(url string) (imgData []byte, contentType, imgType string, error *errors.Error) {
+	var imageType string
+	if strings.Contains(url, ".") && len(url) > 4 {
+		imageType = url[len(url)-4:]
+	} else {
+		return nil, "", imageType, errors.Sys("invalid image url")
+	}
+	if strings.Contains(imageType, "jpeg") || strings.Contains(imageType, "jpg") {
+		contentType = "image/jpeg"
+		imageType = ".jpg"
+	}
+	if strings.Contains(imageType, "png") {
+		contentType = "image/png"
+		imageType = ".png"
+	}
+	if strings.Contains(imageType, "gif") {
+		contentType = "image/gif"
+		imageType = ".gif"
+	}
+	if contentType == "" {
+		contentType = "image/png"
+		imageType = ".png"
+	}
+
+	response, httpErr := http.Get(url)
+	if httpErr != nil {
+		return nil, "", imageType, errors.Sys(fmt.Sprintf("http.Get error: %v", httpErr))
+	}
+	defer response.Body.Close()
+
+	imgData, readErr := io.ReadAll(response.Body)
+	if readErr != nil {
+		return nil, "", imageType, errors.Sys(fmt.Sprintf("ioutil.ReadAll error: %v", readErr))
+	}
+
+	return imgData, contentType, imageType, nil
 }

@@ -1,71 +1,71 @@
 # Gorig
 
+Gorig is a comprehensive web service framework based on the Go programming language. It provides a complete development model and toolchain. You can quickly create a new project or module using `gorig-cli`.
 
-Gorig 是一个基于 Go 语言的 Web 综合服务框架，提供了一套完整的开发模式和工具链，你可以使用gorig-cli快速创建一个新项目或新模块。
+## Direct Installation
 
-## 直接使用
-```
+```sh
 go get github.com/jom-io/gorig@latest
 ```
 
-## 使用gorig-cli
+## Using gorig-cli
 
-使用 npm 全局安装：
+Install globally via npm:
 
 ```sh
 npm install -g gorig-cli
 ```
 
-或者使用 npx 直接运行：
+Or run directly using npx:
 
 ```sh
 npx gorig-cli@latest <command>
 ```
 
-## 快速开始
+## Quick Start
 
-### 初始化新项目
+### Initialize a New Project
 
-使用 `init` 命令创建一个新项目：
+Use the `init` command to create a new project:
 
 ```sh
 gorig-cli init my-new-project
 ```
 
-或者使用 npx：
+Or use npx:
 
 ```sh
 npx gorig-cli@latest init my-new-project
 ```
 
-这将在当前目录下创建一个新项目，包含 `_cmd/main.go`、`domain/init.go`、`cron/cron.go` 等基本文件和目录。
+This will create a new project in the current directory, including basic files and directories such as `_cmd/main.go`, `domain/init.go`, and `cron/cron.go`.
 
-### 创建新模块
+### Create a New Module
 
-在项目根目录下使用 `create` 命令创建一个新模块：
+Create a new module using the `create` command from the project's root directory:
 
 ```sh
 gorig-cli create user
 ```
 
-或者使用 npx：
+Or use npx:
 
 ```sh
 npx gorig-cli@latest create user
 ```
 
-这将在项目中创建一个名为 `user` 的模块，包含 `api/`、`internal/`、`model/` 等文件夹和必要的代码。
+This will create a module named `user`, including directories such as `api/`, `internal/`, `model/`, and essential boilerplate code.
 
-### 运行项目
+### Running the Project
 
-进入项目目录后，可以使用以下命令运行项目：
+Navigate to your project directory and run the project using:
 
 ```sh
 cd my-new-project
 go run _cmd/main.go
 ```
 
-或者编译后运行：
+Or compile and run:
 
 ```sh
 go build -o my-new-project _cmd/main.go && ./my-new-project

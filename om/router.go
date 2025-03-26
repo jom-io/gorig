@@ -2,11 +2,15 @@ package om
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/global/variable"
 	"github.com/jom-io/gorig/httpx"
 	"github.com/jom-io/gorig/om/mid"
 )
 
 func init() {
+	if variable.OMKey == "" {
+		return
+	}
 	httpx.RegisterRouter(func(groupRouter *gin.RouterGroup) {
 		om := groupRouter.Group("om")
 		auth := om.Group("auth")

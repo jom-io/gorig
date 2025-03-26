@@ -2,7 +2,7 @@ package logtool
 
 var Categories = []string{"commons", "rest", "console"}
 
-var Levels = []string{"debug", "info", "warn", "error", "fatal"}
+var Levels = []string{"debug", "info", "warn", "error", "fatal", "dpanic"}
 
 type SearchOptions struct {
 	Categories []string `json:"categories" form:"categories"`
