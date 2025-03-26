@@ -92,7 +92,6 @@ func (m *Matches) Add(field string, value interface{}, t MatchType, ignore ...bo
 		return m
 	}
 	if len(ignore) == 0 || !ignore[0] {
-		// 根据类型判断是否取值 字符串判断非"" 数字判断非0 数组判断长度大于0 map判断长度大于0 struct判断是否有值
 		switch value.(type) {
 		case string:
 			if value.(string) == "" {

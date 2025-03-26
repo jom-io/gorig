@@ -222,7 +222,6 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 	}
 }
 
-// sortMysqlCond Mysql根据排序列表获取排序
 func sortMysqlCond(sortList Sorts, tx *gorm.DB) {
 	if len(sortList) > 0 {
 		for _, v := range sortList {

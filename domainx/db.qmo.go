@@ -159,7 +159,6 @@ func initMgoDB(dbname ...string) error {
 	for _, db := range dbname {
 		sys.Info(" * Init mongo db: ", db)
 		path := configName + "." + db
-		// 读取配置
 		uri, err := configure.MustGetString(path + ".uri")
 		if err != nil {
 			return err
@@ -257,7 +256,6 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ..
 			}
 			return c.ID, nil
 		} else {
-			// 生成id
 			if newID > 0 {
 				c.ID = newID
 			} else {

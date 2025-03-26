@@ -172,7 +172,6 @@ func PostJSONRespHeader(baseURL string, params interface{}, header map[string]st
 	}
 	defer response.Body.Close()
 
-	// 读取响应
 	body, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Sys(fmt.Sprintf("io.ReadAll error: %v", readErr))

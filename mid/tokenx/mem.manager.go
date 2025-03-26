@@ -137,7 +137,6 @@ func saveLocalTokens() {
 		return
 	}
 
-	// 写入文件
 	err = ioutil.WriteFile(localTokensFile, data, 0644)
 	if err != nil {
 		logger.Error(nil, fmt.Sprintf("Write file error:%v", err))
