@@ -149,6 +149,15 @@ func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}
 	return nil
 }
 
+func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) error {
+	tx := c.DB.Table(c.TableName())
+	matchMysqlCond(matchList, tx)
+	if err := tx.Updates(data).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *gormDBService) Delete(c *Con, data Identifiable) error {
 	if err := c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Delete(&data).Error; err != nil {
 		return err

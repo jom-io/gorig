@@ -320,6 +320,21 @@ func UpdatePart(c *Con, id int64, data map[string]interface{}) *errors.Error {
 	return nil
 }
 
+// UpdateByMatch updates records by condition
+func UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) *errors.Error {
+	if c == nil {
+		return errors.Sys("con not init")
+	}
+
+	dbService := GetDBService(c.GetConType())
+
+	gErr := dbService.UpdateByMatch(c, matchList, data)
+	if gErr != nil {
+		return c.HandleWithErr(gErr)
+	}
+	return nil
+}
+
 // FindByPageField queries paginated records by field name
 func FindByPageField[T Identifiable](c *Con, fieldName string, value interface{}, page *load.Page, pageResp *load.PageResp, result *[]T, prefixes ...string) *errors.Error {
 	matchList := []Match{{Field: fieldName, Value: value, Type: MEq}}

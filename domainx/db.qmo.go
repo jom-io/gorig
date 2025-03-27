@@ -290,6 +290,16 @@ func (s *mongoDBService) UpdatePart(c *Con, id int64, data map[string]interface{
 	}
 }
 
+func (s *mongoDBService) UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) error {
+	if coll, e := getColl(c); e != nil {
+		return e
+	} else {
+		condition := matchMongoCond(matchList)
+		_, mErr := coll.UpdateAll(context.Background(), mapToBsonM(condition), bson.M{"$set": mapToBsonM(data)})
+		return mErr
+	}
+}
+
 func (s *mongoDBService) Delete(c *Con, data Identifiable) error {
 	if coll, e := getColl(c); e != nil {
 		return e
