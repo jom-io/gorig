@@ -9,23 +9,24 @@ import (
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/spf13/cast"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 )
 
 type tokenInfo struct {
-	UserID    string
-	UserType  string
-	ExpiresAt int64
+	UserID      string
+	UserType    string
+	ExpiresAt   int64
+	LastRefresh int64
 }
 
 // var tokens = make(map[string]*tokenInfo)
 var tokenMap = sync.Map{}
 var localTokensFile = "./tokens.json"
+var refreshGap = int64(60 * 60)
 
 type memoryImpl struct {
 	generator TokenGenerator
@@ -35,14 +36,14 @@ func init() {
 	sys.Info(" # Tokenx: Memory Token Manager")
 	loadLocalTokens()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		sig := <-c
-		logger.Info(nil, fmt.Sprintf("received signal:%v", sig))
-		saveLocalTokens()
-		os.Exit(0)
-	}()
+	//c := make(chan os.Signal, 1)
+	//signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	//go func() {
+	//	sig := <-c
+	//	logger.Info(nil, fmt.Sprintf("received signal:%v", sig))
+	//	saveLocalTokens()
+	//	os.Exit(0)
+	//}()
 
 	// 定时清理过期token
 	go func() {
@@ -55,53 +56,53 @@ func init() {
 				}
 				return true
 			})
+			go saveLocalTokens()
 		}
 	}()
 }
 
 func loadLocalTokens() {
 	if _, err := os.Stat(localTokensFile); os.IsNotExist(err) {
-		file, e := os.Create(localTokensFile)
-		if e != nil {
-			logger.Error(nil, fmt.Sprintf("Create file error:%v", e))
-			file.Close()
-			return
-		}
-		file, err := os.Open(localTokensFile)
-		if err != nil {
-			if os.IsNotExist(err) {
-				logger.Info(nil, "Tokens file not exist use default tokens")
-				return
-			}
-			logger.Error(nil, fmt.Sprintf("Open file error:%v", err))
-			return
-		}
-		defer file.Close()
-
-		data, err := ioutil.ReadAll(file)
-		if err != nil {
-			logger.Error(nil, fmt.Sprintf("Read file error:%v", err))
-			return
-		}
-		if len(data) == 0 {
-			return
-		}
-
-		mapData := make(map[string]*tokenInfo)
-		err = json.Unmarshal(data, &mapData)
-		if err != nil {
-			logger.Error(nil, fmt.Sprintf("Parse JSON error:%v", err))
-			err = os.Remove(localTokensFile)
-			if err != nil {
-				logger.Error(nil, fmt.Sprintf("Delete file error:%v", err))
-				logger.Info(nil, "Deleted tokens file")
-			}
-			for k, v := range mapData {
-				tokenMap.Store(k, v)
-			}
-			logger.Info(nil, fmt.Sprintf("Loaded tokens:%v", mapData))
-		}
+		logger.Info(nil, "Tokens file does not exist, use default tokens")
+		return
 	}
+
+	file, err := os.Open(localTokensFile)
+	if err != nil {
+		logger.Error(nil, fmt.Sprintf("Open tokens file error: %v", err))
+		return
+	}
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		logger.Error(nil, fmt.Sprintf("Read tokens file error: %v", err))
+		return
+	}
+
+	if len(data) == 0 {
+		logger.Info(nil, "Tokens file is empty")
+		return
+	}
+
+	mapData := make(map[string]*tokenInfo)
+	err = json.Unmarshal(data, &mapData)
+	if err != nil {
+		logger.Error(nil, fmt.Sprintf("Parse tokens JSON error: %v", err))
+		// 可选：删除文件
+		err = os.Remove(localTokensFile)
+		if err != nil {
+			logger.Error(nil, fmt.Sprintf("Delete invalid tokens file error: %v", err))
+		} else {
+			logger.Info(nil, "Deleted invalid tokens file")
+		}
+		return
+	}
+
+	for k, v := range mapData {
+		tokenMap.Store(k, v)
+	}
+	logger.Info(nil, "Loaded tokens from file", zap.Int("count", len(mapData)))
 }
 
 var saveLock = make(chan struct{}, 1)
@@ -121,15 +122,21 @@ func saveLocalTokens() {
 		<-saveLock
 	}()
 
-	if tokenLen() == 0 {
-		return
-	}
+	//if tokenLen() == 0 {
+	//	return
+	//}
 
 	mapData := make(map[string]*tokenInfo)
+	count := 0
 	tokenMap.Range(func(key, value interface{}) bool {
 		mapData[key.(string)] = value.(*tokenInfo)
+		count++
 		return true
 	})
+
+	if count == 0 {
+		return
+	}
 
 	data, err := json.Marshal(mapData)
 	if err != nil {
@@ -157,40 +164,47 @@ func getTokenLock(token string) *sync.Mutex {
 }
 
 // GetUserID
-func (u *memoryImpl) GetUserID(token string) (userID string, exisit bool) {
+func (u *memoryImpl) GetUserID(token string) (string, bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error(nil, fmt.Sprintf("GetUserID panic:%v", err))
 		}
 	}()
+
 	lock := getTokenLock(token)
 	lock.Lock()
 	defer lock.Unlock()
-	defer func() {
-		tokenLock.Delete(token)
-	}()
 
 	if tokenLen() == 0 {
 		loadLocalTokens()
 	}
-	value, exisitGet := tokenMap.Load(token)
-	if exisitGet {
-		userInfo := value.(*tokenInfo)
-		if userInfo != nil && userInfo.ExpiresAt < time.Now().Unix() {
-			u.Destroy(token)
-			return "", false
-		}
-		// 刷新过期时间 间隔时间小于1秒不刷新 防止并发刷新
-		if time.Now().Unix()+int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))-userInfo.ExpiresAt <= 1 {
-			return userInfo.UserID, true
-		}
-		if userInfo != nil {
-			userInfo.ExpiresAt = time.Now().Unix() + int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
-			tokenMap.Store(token, userInfo)
-			return userInfo.UserID, true
-		}
+
+	value, exists := tokenMap.Load(token)
+	if !exists {
+		return "", false
 	}
-	return "", false
+
+	userInfo := value.(*tokenInfo)
+	if userInfo == nil || userInfo.ExpiresAt < time.Now().Unix() {
+		u.Destroy(token)
+		go saveLocalTokens()
+		return "", false
+	}
+
+	now := time.Now().Unix()
+
+	if userInfo.LastRefresh == 0 {
+		userInfo.LastRefresh = userInfo.ExpiresAt - int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
+	}
+
+	if now-userInfo.LastRefresh >= refreshGap {
+		userInfo.ExpiresAt = now + int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
+		userInfo.LastRefresh = now
+		tokenMap.Store(token, userInfo)
+		go saveLocalTokens()
+	}
+
+	return userInfo.UserID, true
 }
 
 // 根据userInfo获取userType 规则为: userInfo的value拼接 用于token变动后及时失效
@@ -221,6 +235,7 @@ func (u *memoryImpl) GenerateAndRecord(userId string, userInfo map[string]interf
 	if token, err = u.generator.Generate(userId, userInfo, expireAt); err == nil {
 		u.Clean(userId)
 		u.Record(token, userInfo)
+		go saveLocalTokens()
 	}
 	return
 }

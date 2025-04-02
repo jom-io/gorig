@@ -20,7 +20,7 @@ const (
 
 const defSigning = "github.com/jom-io/gorig"
 
-const defExpire = 3600 * 24 * 3
+const defExpire = 3600 * 24 * 7
 
 type TokenGenerator interface {
 	Generate(userId string, userInfo map[string]interface{}, expireAt int64) (tokens string, err *errors.Error)

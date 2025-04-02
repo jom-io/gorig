@@ -48,6 +48,7 @@ func Shutdown(code string, ctx context.Context) error {
 		sys.Error(" * Rest service shutdown error: ", err.Error())
 		return err
 	}
+
 	sys.Error(" * Rest service exist: ", gHttpServer.Addr)
 	return nil
 }
