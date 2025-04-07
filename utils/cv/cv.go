@@ -2,6 +2,10 @@ package cv
 
 import "time"
 
+func S(s string) *string {
+	return Str(s)
+}
+
 func Str(s string) *string {
 	if s == "" {
 		return nil
@@ -46,6 +50,10 @@ func Float64(f float64) *float64 {
 		return nil
 	}
 	return &f
+}
+
+func T(t time.Time) *time.Time {
+	return Time(t)
 }
 
 func Time(t time.Time) *time.Time {
