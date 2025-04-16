@@ -19,9 +19,41 @@ type Cache[T any] interface {
 	Del(key string) error
 	Exists(key string) (bool, error)
 	RPush(key string, value T) error
-	BRPop(timeout time.Duration, key string) (value interface{}, err error)
+	BRPop(timeout time.Duration, key string) (value T, err error)
 	Incr(key string) (int64, error)
 	Expire(key string, expiration time.Duration) error
+	Flush() error
+}
+
+type Type string
+
+const (
+	Memory Type = "memory"
+	Redis  Type = "redis"
+	JSON   Type = "json"
+)
+
+func New[T any](t Type, args ...any) (Cache[T], error) {
+	switch t {
+	case Memory:
+		var defaultExpiration, cleanupInterval = time.Minute, time.Minute
+		if len(args) == 1 {
+			defaultExpiration = args[0].(time.Duration)
+		} else if len(args) == 2 {
+			defaultExpiration = args[0].(time.Duration)
+			cleanupInterval = args[1].(time.Duration)
+		}
+		return NewGoCache[T](defaultExpiration, cleanupInterval), nil
+	case Redis:
+		return GetRedisInstance[T](), nil
+	case JSON:
+		if len(args) < 1 {
+			return nil, errors.New("file path is required")
+		}
+		return NewJSONCache[T](args[0].(string))
+	default:
+		return nil, fmt.Errorf("unsupported cache type: %s", t)
+	}
 }
 
 // ErrCacheMiss indicates a cache miss error

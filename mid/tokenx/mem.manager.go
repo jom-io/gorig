@@ -81,7 +81,7 @@ func loadLocalTokens() {
 	}
 
 	if len(data) == 0 {
-		logger.Info(nil, "Tokens file is empty")
+		//logger.Info(nil, "Tokens file is empty")
 		return
 	}
 

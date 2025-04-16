@@ -143,7 +143,7 @@ func ErrorParam(c *gin.Context, wrongParam interface{}) {
 
 // ErrorSystem 500
 func ErrorSystem(c *gin.Context, msg string, data interface{}) {
-	ReturnJson(c, http.StatusInternalServerError, consts.ServerOccurredErrorCode, consts.ServerOccurredErrorMsg+msg, &data)
+	ReturnJson(c, http.StatusInternalServerError, consts.ServerOccurredErrorCode, consts.ServerOccurredErrorMsg+" "+msg, &data)
 	c.Abort()
 }
 

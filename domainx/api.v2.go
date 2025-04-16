@@ -13,6 +13,10 @@ func (c *Con) SaveOrUpdate(data Identifiable, newIDs ...int64) (id int64, err *e
 	return SaveOrUpdate(c, data, newIDs...)
 }
 
+func (c *Con) Save(data Identifiable, newIDs ...int64) (id int64, err *errors.Error) {
+	return Save(c, data, newIDs...)
+}
+
 func (c *Con) Delete(data Identifiable) *errors.Error {
 	return Delete(c, data)
 }

@@ -138,28 +138,32 @@ func (r *RedisCache[T]) Exists(key string) (bool, error) {
 	return result > 0, nil
 }
 
-func (r *RedisCache[T]) RPush(key string, value interface{}) error {
+func (r *RedisCache[T]) RPush(key string, value T) error {
 	if GetRedisInstance(r) == nil {
 		return fmt.Errorf("redis client is nil")
 	}
 	return r.Client.RPush(r.Ctx, key, value).Err()
 }
 
-func (r *RedisCache[T]) BRPop(timeout time.Duration, key string) (value interface{}, err error) {
+func (r *RedisCache[T]) BRPop(timeout time.Duration, key string) (value T, err error) {
 	if GetRedisInstance(r) == nil {
-		return nil, fmt.Errorf("redis client is nil")
+		return value, fmt.Errorf("redis client is nil")
 	}
 	result, err := r.Client.BRPop(r.Ctx, timeout, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, ErrCacheMiss
+			return value, ErrCacheMiss
 		}
-		return nil, err
+		return value, err
 	}
 	if len(result) != 2 {
-		return nil, fmt.Errorf("invalid result length from BRPop for key %s", key)
+		return value, fmt.Errorf("invalid result length from BRPop for key %s", key)
 	}
-	return result[1], nil
+	var data T
+	if err = json.Unmarshal([]byte(result[1]), &data); err != nil {
+		return value, err
+	}
+	return
 }
 
 func (r *RedisCache[T]) Incr(key string) (int64, error) {
@@ -174,4 +178,11 @@ func (r *RedisCache[T]) Expire(key string, expiration time.Duration) error {
 		return fmt.Errorf("redis client is nil")
 	}
 	return r.Client.Expire(r.Ctx, key, expiration).Err()
+}
+
+func (r *RedisCache[T]) Flush() error {
+	if GetRedisInstance(r) == nil {
+		return fmt.Errorf("redis client is nil")
+	}
+	return r.Client.FlushAll(r.Ctx).Err()
 }

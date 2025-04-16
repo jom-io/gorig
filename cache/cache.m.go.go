@@ -182,3 +182,8 @@ func (g *GoCache[T]) Expire(key string, expiration time.Duration) error {
 	g.cache.Set(key, val, expiration)
 	return nil
 }
+
+func (g *GoCache[T]) Flush() error {
+	g.cache.Flush()
+	return nil
+}

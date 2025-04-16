@@ -56,7 +56,7 @@ func UseComplex[T any](conType ConType, dbName string, table string, prefix ...s
 	} else if variable.TBPrefix != "" {
 		table = variable.TBPrefix + table
 	}
-	c := Complex[T]{Con: UseCon(conType, dbName, table)}
+	c := Complex[T]{Con: UseCon(conType, dbName, table), Data: new(T)}
 	if c.Con == nil {
 		return &c
 	}
