@@ -23,7 +23,7 @@ func TestListLogFiles(t *testing.T) {
 	}
 	fmt.Printf("all matched files: %d\n", len(result))
 	for i, file := range result {
-		fmt.Printf("#%d => %s\n", i+1, file)
+		fmt.Printf("#%s => %s\n", i, file)
 	}
 
 	filePath := fmt.Sprintf("../../.logs/commons/commons-%s.jsonl", time.Now().Format("2006-01-02T15-04-05.000"))
@@ -42,7 +42,7 @@ func TestListLogFiles(t *testing.T) {
 	}
 	fmt.Printf("all matched files: %d\n", len(result))
 	for i, file := range result {
-		fmt.Printf("#%d => %s\n", i+1, file)
+		fmt.Printf("#%s => %s\n", i, file)
 	}
 
 	opts.EndTime = time.Now().Format("2006-01-02 15:04:05")
@@ -53,7 +53,7 @@ func TestListLogFiles(t *testing.T) {
 	}
 	fmt.Printf("end time matched files: %d\n", len(result))
 	for i, file := range result {
-		fmt.Printf("#%d => %s\n", i+1, file)
+		fmt.Printf("#%s => %s\n", i, file)
 	}
 	err = os.Remove(filePath)
 }

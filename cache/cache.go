@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/utils/logger"
+	"golang.org/x/sync/singleflight"
+	"path/filepath"
 	"sync"
 	"time"
-
-	"golang.org/x/sync/singleflight"
 )
 
 // Cache is a generic cache interface that defines basic cache operations
@@ -33,7 +33,7 @@ const (
 	JSON   Type = "json"
 )
 
-func New[T any](t Type, args ...any) (Cache[T], error) {
+func New[T any](t Type, args ...any) Cache[T] {
 	switch t {
 	case Memory:
 		var defaultExpiration, cleanupInterval = time.Minute, time.Minute
@@ -43,16 +43,21 @@ func New[T any](t Type, args ...any) (Cache[T], error) {
 			defaultExpiration = args[0].(time.Duration)
 			cleanupInterval = args[1].(time.Duration)
 		}
-		return NewGoCache[T](defaultExpiration, cleanupInterval), nil
+		return NewGoCache[T](defaultExpiration, cleanupInterval)
 	case Redis:
-		return GetRedisInstance[T](), nil
+		return GetRedisInstance[T]()
 	case JSON:
 		if len(args) < 1 {
-			return nil, errors.New("file path is required")
+			args = append(args, filepath.Base(fmt.Sprintf("%T", new(T))))
 		}
-		return NewJSONCache[T](args[0].(string))
+		cache, err := NewJSONCache[T](args[0].(string))
+		if err != nil {
+			logger.Error(nil, fmt.Sprintf("Failed to create JSON cache: %v", err))
+		}
+		return cache
 	default:
-		return nil, fmt.Errorf("unsupported cache type: %s", t)
+		logger.Error(nil, fmt.Sprintf("Unsupported cache type: %s, using memory cache", t))
+		return NewGoCache[T](time.Minute, time.Minute)
 	}
 }
 

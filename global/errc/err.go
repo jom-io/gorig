@@ -18,7 +18,7 @@ const (
 	ErrorsFuncEventNotCall       string = "The registered function cannot be executed correctly"
 	ErrorsBasePath               string = "Failed to initialize project root directory"
 	ErrorsTokenBaseInfo          string = "The most basic format error of the token, please provide a valid token!"
-	ErrorsNoAuthorization        string = "Token authentication failed, please re-acquire the token through the token authorization interface,"
+	ErrorsNoAuthorization        string = "Token authentication failed, please re-acquire the token through the token authorization interface"
 	ErrorsRefreshTokenFail       string = "The token does not meet the refresh conditions, please re-acquire the token through the login interface!"
 	ErrorsParseTokenFail         string = "Failed to parse token"
 	ErrorsDBInitFail             string = "%s Database driver, connection initialization failed"

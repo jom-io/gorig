@@ -9,7 +9,6 @@ import (
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/spf13/cast"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -102,7 +101,7 @@ func loadLocalTokens() {
 	for k, v := range mapData {
 		tokenMap.Store(k, v)
 	}
-	logger.Info(nil, "Loaded tokens from file", zap.Int("count", len(mapData)))
+	//logger.Info(nil, "Loaded tokens from file", zap.Int("count", len(mapData)))
 }
 
 var saveLock = make(chan struct{}, 1)
@@ -134,9 +133,9 @@ func saveLocalTokens() {
 		return true
 	})
 
-	if count == 0 {
-		return
-	}
+	//if count == 0 {
+	//	return
+	//}
 
 	data, err := json.Marshal(mapData)
 	if err != nil {

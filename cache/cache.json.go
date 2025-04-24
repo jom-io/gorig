@@ -46,6 +46,9 @@ func (c *JSONFileCache[T]) loadFromFile() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
+		if os.IsPermission(err) {
+			return fmt.Errorf("permission denied to access cache file: %s", c.filePath)
+		}
 		return err
 	}
 	defer file.Close()

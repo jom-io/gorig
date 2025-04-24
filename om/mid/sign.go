@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/apix/response"
 	"github.com/jom-io/gorig/mid/tokenx"
-	"github.com/jom-io/gorig/om/user"
+	"github.com/jom-io/gorig/om/omuser"
 	"strings"
 )
 
@@ -26,7 +26,7 @@ func Sign() gin.HandlerFunc {
 			if userID, exist := get.Manager.GetUserID(sign); !exist {
 				response.ErrorTokenAuthFail(c)
 				return
-			} else if !user.IsOM(userID) {
+			} else if !omuser.IsOM(userID) {
 				response.ErrorForbidden(c)
 			}
 			c.Next()
