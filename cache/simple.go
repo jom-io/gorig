@@ -22,6 +22,8 @@ func init() {
 		caches = append(caches, l2Cache)
 	}
 
+	_ = New[any](JSON, "dev")
+
 	// 定义一个 LoaderFunc，用于从外部源加载数据
 	//loader := func(key string) (string, error) {
 	//	// 在实际应用中，这里可以是数据库查询或其他外部数据源
