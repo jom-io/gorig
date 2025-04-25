@@ -3,6 +3,7 @@ package serv
 import (
 	"context"
 	"fmt"
+	_ "github.com/jom-io/gorig/cache"
 	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
