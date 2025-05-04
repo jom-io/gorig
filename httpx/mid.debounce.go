@@ -102,7 +102,7 @@ func NewShardedRequestMap() *ShardedRequestMap {
 		srm.shards[i] = &shard{m: make(map[string]time.Time)}
 	}
 	go srm.startCleanupRoutine()
-	sys.Info(" # StartShardedCleanupRoutine")
+	sys.Info("# Http debounce sharded request map initialized")
 	return srm
 }
 

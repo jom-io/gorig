@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"strings"
+	"time"
 )
 
 var GormDBServ = &gormDBService{}
@@ -143,6 +144,7 @@ func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...
 }
 
 func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {
+	data["updated_at"] = time.Now()
 	if err := c.DB.Table(c.TableName()).Where("id = ?", id).Updates(data).Error; err != nil {
 		return err
 	}
@@ -152,6 +154,7 @@ func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}
 func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) error {
 	tx := c.DB.Table(c.TableName())
 	matchMysqlCond(matchList, tx)
+	data["updated_at"] = time.Now()
 	if err := tx.Updates(data).Error; err != nil {
 		return err
 	}

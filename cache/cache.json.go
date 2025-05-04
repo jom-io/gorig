@@ -84,7 +84,7 @@ func (c *JSONFileCache[T]) Get(key string) (T, error) {
 
 	item, found := c.data[key]
 	if !found || (item.Expiration > 0 && time.Now().Unix() > item.Expiration) {
-		return zero, ErrCacheMiss
+		return zero, nil
 	}
 	return item.Value, nil
 }

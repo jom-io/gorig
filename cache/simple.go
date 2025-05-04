@@ -24,37 +24,37 @@ func init() {
 
 	_ = New[any](JSON, "dev")
 
-	// 定义一个 LoaderFunc，用于从外部源加载数据
+	// Define a LoaderFunc for loading data from an external source
 	//loader := func(key string) (string, error) {
-	//	// 在实际应用中，这里可以是数据库查询或其他外部数据源
+	//	// In actual applications, this could be a database query or other external data source
 	//	fmt.Printf("Loading data for key: %s from external source\n", key)
 	//	return fmt.Sprintf("Data_for_%s", key), nil
 	//}
 
-	//// 创建 Tool
+	//// Create Tool
 	//cacheTool := NewCacheTool[any](caches, loader)
 	//
-	//// 示例：设置缓存数据
+	//// Example: Set cache data
 	//if err := cacheTool.Set("user:123", "John Doe", 10*time.Minute); err != nil {
 	//	log.Fatalf("Error setting cache: %v", err)
 	//}
 	//fmt.Println("Set cache for key 'user:123'")
 	//
-	//// 示例：获取缓存数据（命中 L1）
+	//// Example: Get cache data (hit L1)
 	//data, err := cacheTool.Get("user:123", 10*time.Minute)
 	//if err != nil {
 	//	log.Fatalf("Error getting cache: %v", err)
 	//}
 	//fmt.Printf("Retrieved cache for 'user:123': %s\n", data)
 	//
-	//// 示例：获取未缓存的数据（将触发 LoaderFunc）
+	//// Example: Get uncached data (will trigger LoaderFunc)
 	//data, err = cacheTool.Get("user:456", 10*time.Minute)
 	//if err != nil {
 	//	log.Fatalf("Error getting cache: %v", err)
 	//}
 	//fmt.Printf("Retrieved cache for 'user:456': %s\n", data)
 	//
-	//// 示例：删除缓存数据
+	//// Example: Delete cache data
 	//if err := cacheTool.Delete("user:123"); err != nil {
 	//	log.Fatalf("Error deleting cache: %v", err)
 	//}

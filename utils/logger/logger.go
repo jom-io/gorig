@@ -1,10 +1,11 @@
 package logger
 
 import (
-	"github.com/gin-gonic/gin"
+	"context"
 	"github.com/jom-io/gorig/global/consts"
 	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/sys"
+	"github.com/rs/xid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -101,54 +102,66 @@ func GetLogger(key string) *zap.Logger {
 
 	return zap.New(core)
 }
-func getTraceID(ctx *gin.Context) string {
+func getTraceID(ctx context.Context) any {
 	if ctx == nil {
 		return "no traceid"
 	}
-	return ctx.GetString(consts.TraceIDKey)
+	return ctx.Value(consts.TraceIDKey)
 }
 
-func putTraceId(ctx *gin.Context, fields ...zap.Field) []zap.Field {
+func putTraceId(ctx context.Context, fields ...zap.Field) []zap.Field {
 	if ctx != nil {
-		userID := ctx.GetString(consts.UserID)
-		if userID != "" {
-			fields = append([]zap.Field{zap.String(consts.UserIDKey, userID)}, fields...)
+		ctx.Value(consts.TraceIDKey)
+		userID := ctx.Value(consts.UserIDKey)
+		if userID != nil {
+			fields = append([]zap.Field{zap.Any(consts.UserIDKey, userID)}, fields...)
 		}
 	}
-	return append([]zap.Field{zap.String(consts.TraceIDKey, getTraceID(ctx))}, fields...)
+	return append([]zap.Field{zap.Any(consts.TraceIDKey, getTraceID(ctx))}, fields...)
 }
 
-func Info(ctx *gin.Context, msg string, fields ...zap.Field) {
+func NewCtx(traceIds ...string) context.Context {
+	ctx := context.Background()
+	var traceId string
+	if len(traceIds) > 0 {
+		traceId = traceIds[0]
+	} else {
+		traceId = xid.New().String()
+	}
+	return context.WithValue(ctx, consts.TraceIDKey, traceId)
+}
+
+func Info(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.Info(msg, putTraceId(ctx, fields...)...)
 }
 
-func Warn(ctx *gin.Context, msg string, fields ...zap.Field) {
+func Warn(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.Warn(msg, putTraceId(ctx, fields...)...)
 }
 
-func Error(ctx *gin.Context, msg string, fields ...zap.Field) {
+func Error(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.Error(msg, putTraceId(ctx, fields...)...)
 }
 
-func DPanic(ctx *gin.Context, msg string, fields ...zap.Field) {
+func DPanic(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.DPanic(msg, putTraceId(ctx, fields...)...)
 }
 
-func Panic(ctx *gin.Context, msg string, fields ...zap.Field) {
+func Panic(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.Panic(msg, putTraceId(ctx, fields...)...)
 }
 
-func Fatal(ctx *gin.Context, msg string, fields ...zap.Field) {
+func Fatal(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.Fatal(msg, putTraceId(ctx, fields...)...)
 }
 
-func Debug(ctx *gin.Context, msg string, fields ...zap.Field) {
+func Debug(ctx context.Context, msg string, fields ...zap.Field) {
 	fields = insertLine(fields...)
 	Logger.Debug(msg, putTraceId(ctx, fields...)...)
 }

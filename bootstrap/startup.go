@@ -6,7 +6,6 @@ import (
 	_ "github.com/jom-io/gorig/domainx"
 	_ "github.com/jom-io/gorig/global/variable"
 	"github.com/jom-io/gorig/httpx"
-	_ "github.com/jom-io/gorig/om"
 	"github.com/jom-io/gorig/serv"
 	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/sys"

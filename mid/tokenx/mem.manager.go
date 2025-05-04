@@ -32,7 +32,7 @@ type memoryImpl struct {
 }
 
 func init() {
-	sys.Info(" # Tokenx: Memory Token Manager")
+	sys.Info("# Token memory manager initialized")
 	loadLocalTokens()
 
 	//c := make(chan os.Signal, 1)

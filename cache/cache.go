@@ -1,9 +1,9 @@
 package cache
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/utils/logger"
 	"golang.org/x/sync/singleflight"
 	"path/filepath"
@@ -31,6 +31,7 @@ const (
 	Memory Type = "memory"
 	Redis  Type = "redis"
 	JSON   Type = "json"
+	Sqlite Type = "sqlite"
 )
 
 func New[T any](t Type, args ...any) Cache[T] {
@@ -55,6 +56,15 @@ func New[T any](t Type, args ...any) Cache[T] {
 			logger.Error(nil, fmt.Sprintf("Failed to create JSON cache: %v", err))
 		}
 		return cache
+	case Sqlite:
+		if len(args) < 1 {
+			args = append(args, filepath.Base(fmt.Sprintf("%T", new(T))))
+		}
+		cache, err := NewSQLiteCache[T](args[0].(string))
+		if err != nil {
+			logger.Error(nil, fmt.Sprintf("Failed to create SQLite cache: %v", err))
+		}
+		return cache
 	default:
 		logger.Error(nil, fmt.Sprintf("Unsupported cache type: %s, using memory cache", t))
 		return NewGoCache[T](time.Minute, time.Minute)
@@ -69,7 +79,7 @@ type LoaderFunc[T any] func(key string) (T, error)
 
 // Tool is a management tool for multi-level cache
 type Tool[T any] struct {
-	Ctx    *gin.Context
+	Ctx    context.Context
 	caches []Cache[T]
 	loader LoaderFunc[T]
 	group  singleflight.Group
@@ -77,7 +87,7 @@ type Tool[T any] struct {
 }
 
 // NewCacheTool creates a new Tool instance
-func NewCacheTool[T any](ctx *gin.Context, caches []Cache[T], loader LoaderFunc[T]) *Tool[T] {
+func NewCacheTool[T any](ctx context.Context, caches []Cache[T], loader LoaderFunc[T]) *Tool[T] {
 	return &Tool[T]{
 		Ctx:    ctx,
 		caches: caches,

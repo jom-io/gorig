@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/utils/errors"
@@ -31,6 +32,8 @@ func NewCtx() *gin.Context {
 
 func SetTraceID(ctx *gin.Context) {
 	ctx.Set(consts.TraceIDKey, xid.New().String())
+	newCtx := context.WithValue(ctx.Request.Context(), consts.TraceIDKey, ctx.GetString(consts.TraceIDKey))
+	ctx.Request = ctx.Request.WithContext(newCtx)
 }
 
 func GetTraceID(ctx *gin.Context) string {
@@ -64,6 +67,8 @@ func GetUserIDInt64(ctx *gin.Context) int64 {
 
 func SetUserID(ctx *gin.Context, userID string) {
 	ctx.Set(consts.UserID, userID)
+	newCtx := context.WithValue(ctx.Request.Context(), consts.UserIDKey, userID)
+	ctx.Request = ctx.Request.WithContext(newCtx)
 }
 
 func GetUserInfo(ctx *gin.Context) map[string]interface{} {

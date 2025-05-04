@@ -12,16 +12,16 @@ func TestJSONFileCache_BasicOperations(t *testing.T) {
 		Age  int
 	}
 
-	cacheIns, err := cache.New[User](cache.JSON, "test_user_cache")
-	if err != nil {
-		t.Fatalf("failed to create cache: %v", err)
-	}
+	cacheIns := cache.New[User](cache.JSON, "test_user_cache")
+	//if err != nil {
+	//	t.Fatalf("failed to create cache: %v", err)
+	//}
 
 	defer func() {
 		_ = cacheIns.Flush()
 	}()
 
-	err = cacheIns.Set("user1", User{Name: "Alice", Age: 30}, 2*time.Second)
+	err := cacheIns.Set("user1", User{Name: "Alice", Age: 30}, 2*time.Second)
 	if err != nil {
 		t.Fatalf("Set failed: %v", err)
 	}
@@ -64,10 +64,8 @@ func TestJSONFileCache_BasicOperations(t *testing.T) {
 
 func TestJSONFileCache_IncrAndExpire(t *testing.T) {
 	//cacheIns, err := cache.NewJSONCache[int64]("test_incr_cache")
-	cacheIns, err := cache.New[int64](cache.JSON, "test_user_cache")
-	if err != nil {
-		t.Fatalf("failed to create cache: %v", err)
-	}
+	cacheIns := cache.New[int64](cache.JSON, "test_user_cache")
+
 	defer func() {
 		_ = cacheIns.Flush()
 	}()
