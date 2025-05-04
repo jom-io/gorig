@@ -52,4 +52,5 @@ Thumbs.db
 *.json
 *.cache
 *.cache.json
-*deploy
+*.deploy
+*.linux64
