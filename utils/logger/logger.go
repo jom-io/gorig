@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/global/consts"
 	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/sys"
@@ -10,6 +11,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -102,14 +104,34 @@ func GetLogger(key string) *zap.Logger {
 
 	return zap.New(core)
 }
+
+func isNilPointer(i any) bool {
+	if i == nil {
+		return true
+	}
+	val := reflect.ValueOf(i)
+	return val.Kind() == reflect.Ptr && val.IsNil()
+}
+
 func getTraceID(ctx context.Context) any {
 	if ctx == nil {
 		return "no traceid"
+	}
+	if ginCtx, ok := ctx.(*gin.Context); ok && ginCtx != nil {
+		return ginCtx.Value(consts.TraceIDKey)
+	}
+	if isNilPointer(ctx) {
+		return "no-traceid"
 	}
 	return ctx.Value(consts.TraceIDKey)
 }
 
 func putTraceId(ctx context.Context, fields ...zap.Field) []zap.Field {
+	defer func() {
+		if r := recover(); r != nil {
+			sys.Warn("putTraceId panic:", r)
+		}
+	}()
 	if ctx != nil {
 		ctx.Value(consts.TraceIDKey)
 		userID := ctx.Value(consts.UserIDKey)
