@@ -126,6 +126,19 @@ func getTraceID(ctx context.Context) any {
 	return ctx.Value(consts.TraceIDKey)
 }
 
+func getUserID(ctx context.Context) any {
+	if ctx == nil {
+		return nil
+	}
+	if ginCtx, ok := ctx.(*gin.Context); ok && ginCtx != nil {
+		return ginCtx.Value(consts.UserIDKey)
+	}
+	if isNilPointer(ctx) {
+		return nil
+	}
+	return ctx.Value(consts.UserIDKey)
+}
+
 func putTraceId(ctx context.Context, fields ...zap.Field) []zap.Field {
 	defer func() {
 		if r := recover(); r != nil {
@@ -133,9 +146,7 @@ func putTraceId(ctx context.Context, fields ...zap.Field) []zap.Field {
 		}
 	}()
 	if ctx != nil {
-		ctx.Value(consts.TraceIDKey)
-		userID := ctx.Value(consts.UserIDKey)
-		if userID != nil {
+		if userID := getUserID(ctx); userID != nil {
 			fields = append([]zap.Field{zap.Any(consts.UserIDKey, userID)}, fields...)
 		}
 	}
