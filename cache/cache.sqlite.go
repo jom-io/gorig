@@ -17,23 +17,41 @@ type SQLiteCache[T any] struct {
 	lock sync.RWMutex
 }
 
-var newLock sync.Mutex
+var (
+	cacheSqliteIns sync.Map // map[string]any，缓存 SQLiteCache[T] 实例
+	dbLock         sync.Mutex
+)
 
 func NewSQLiteCache[T any](cacheType string) (*SQLiteCache[T], error) {
-	newLock.Lock()
-	defer newLock.Unlock()
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	if val, ok := cacheSqliteIns.Load(cacheType); ok {
+		if typed, ok := val.(*SQLiteCache[T]); ok {
+			return typed, nil
+		}
+	}
+
 	if err := os.MkdirAll(".cache", 0755); err != nil {
 		return nil, err
 	}
 	dbPath := fmt.Sprintf(".cache/%s.db", cacheType)
 	cleanupIfMissingBaseFile(dbPath)
+
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, err
 	}
 
+	defer func() {
+		if p := recover(); p != nil || err != nil {
+			db.Close()
+		}
+	}()
+
 	// open the database in WAL mode
 	if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
+		db.Close()
 		return nil, err
 	}
 
@@ -44,6 +62,7 @@ func NewSQLiteCache[T any](cacheType string) (*SQLiteCache[T], error) {
 		value TEXT NOT NULL,
 		expiration INTEGER
 	);`); err != nil {
+		db.Close()
 		return nil, err
 	}
 
@@ -54,10 +73,14 @@ func NewSQLiteCache[T any](cacheType string) (*SQLiteCache[T], error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		value TEXT NOT NULL
 	);`); err != nil {
+		db.Close()
 		return nil, err
 	}
 
-	return &SQLiteCache[T]{db: db}, nil
+	ins := &SQLiteCache[T]{db: db}
+	cacheSqliteIns.Store(cacheType, ins)
+
+	return ins, nil
 }
 
 func (c *SQLiteCache[T]) IsInitialized() bool {

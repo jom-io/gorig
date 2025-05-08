@@ -25,7 +25,7 @@ func Fail(ctx *gin.Context, err *errors.Error) {
 
 func NewCtx() *gin.Context {
 	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-	ctx.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 	SetTraceID(ctx)
 	return ctx
 }

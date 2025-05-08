@@ -1,12 +1,12 @@
 package messagex
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/jom-io/gorig/httpx"
+	"context"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/rs/xid"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"reflect"
 	"strings"
@@ -84,7 +84,7 @@ func UnSubscribe(topic any, subID uint64) *errors.Error {
 
 func Publish(topic any, message *Message) (error *errors.Error) {
 	if message == nil {
-		return errors.Sys("message is nil")
+		message = new(Message)
 	}
 	if topic != MsgStartup && topic != "" {
 		sys.Info(" # Publish Topic: ", topic)
@@ -97,12 +97,12 @@ func Publish(topic any, message *Message) (error *errors.Error) {
 	return
 }
 
-func PublishWithCtx(ctx *gin.Context, topic any, message *Message) *errors.Error {
+func PublishWithCtx(ctx context.Context, topic any, message *Message) *errors.Error {
 	topicStr := getTopicStr(topic)
 	return Publish(topicStr, message)
 }
 
-func PublishNewMsg[T any](ctx *gin.Context, topic any, content T, groupId ...string) {
+func PublishNewMsg[T any](ctx context.Context, topic any, content T, groupId ...string) {
 	topicStr := getTopicStr(topic)
 	if topicStr == "" {
 		logger.Error(ctx, "PublishNewMsg: topic is empty")
@@ -113,7 +113,7 @@ func PublishNewMsg[T any](ctx *gin.Context, topic any, content T, groupId ...str
 		gid = groupId[0]
 	} else {
 		if ctx != nil {
-			gid = httpx.GetTraceID(ctx)
+			gid = cast.ToString(logger.GetTraceID(ctx))
 		}
 	}
 	msg := &Message{

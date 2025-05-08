@@ -16,16 +16,25 @@ type SQLiteCachePage[T any] struct {
 	dbPath string
 	db     *sql.DB
 	table  string
-	//once   sync.Once
-	mu sync.RWMutex
+	mu     sync.RWMutex
 }
 
-var pageNewLock sync.Mutex
+var (
+	cachePageSqliteIns sync.Map
+	dbPageLock         sync.Mutex
+)
 
 // NewSQLiteCachePage Create a new SQLite cache page with the given name.
 func NewSQLiteCachePage[T any](name string) (*SQLiteCachePage[T], error) {
-	pageNewLock.Lock()
-	defer pageNewLock.Unlock()
+	dbPageLock.Lock()
+	defer dbPageLock.Unlock()
+
+	if val, ok := cachePageSqliteIns.Load(name); ok {
+		if typed, ok := val.(*SQLiteCachePage[T]); ok {
+			return typed, nil
+		}
+	}
+
 	if err := os.MkdirAll(".cache", 0755); err != nil {
 		return nil, err
 	}
@@ -34,8 +43,16 @@ func NewSQLiteCachePage[T any](name string) (*SQLiteCachePage[T], error) {
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() {
+		if p := recover(); p != nil || err != nil {
+			db.Close()
+		}
+	}()
+
 	// Set the SQLite journal mode to WAL (Write-Ahead Logging)
 	if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
+		db.Close()
 		return nil, err
 	}
 
@@ -51,8 +68,11 @@ func NewSQLiteCachePage[T any](name string) (*SQLiteCachePage[T], error) {
 	cache := &SQLiteCachePage[T]{dbPath: dbPath, db: db, table: table}
 
 	if err := cache.ensureTable(); err != nil {
+		db.Close()
 		return nil, err
 	}
+
+	cachePageSqliteIns.Store(name, cache)
 
 	return cache, nil
 }

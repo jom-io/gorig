@@ -123,6 +123,10 @@ func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interfac
 	return req
 }
 
+func Bind(ctx *gin.Context, req interface{}) (err *errors.Error) {
+	return BindParams(ctx, req)
+}
+
 func BindParams(ctx *gin.Context, req interface{}) (err *errors.Error) {
 	if ctx.IsAborted() {
 		return errors.Verify("BindParams: ctx is aborted")

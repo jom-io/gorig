@@ -267,7 +267,7 @@ func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}
 }
 
 func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
-	tx := c.DB.Table(c.TableName())
+	tx := c.DB.Table(c.TableName()).Where("deleted_at is null")
 	matchMysqlCond(matchList, tx)
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {

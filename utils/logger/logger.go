@@ -7,6 +7,7 @@ import (
 	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/rs/xid"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -111,6 +112,10 @@ func isNilPointer(i any) bool {
 	}
 	val := reflect.ValueOf(i)
 	return val.Kind() == reflect.Ptr && val.IsNil()
+}
+
+func GetTraceID(ctx context.Context) string {
+	return cast.ToString(getTraceID(ctx))
 }
 
 func getTraceID(ctx context.Context) any {
