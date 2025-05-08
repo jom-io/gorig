@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -20,6 +21,7 @@ type SQLiteCache[T any] struct {
 var (
 	cacheSqliteIns sync.Map // map[string]any，缓存 SQLiteCache[T] 实例
 	dbLock         sync.Mutex
+	sqliteTimeOut  = 5 * time.Second
 )
 
 func NewSQLiteCache[T any](cacheType string) (*SQLiteCache[T], error) {
@@ -102,6 +104,8 @@ func (c *SQLiteCache[T]) Get(key string) (T, error) {
 
 	c.lock.RLock()
 	defer c.lock.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	var valueStr string
 	var expiration int64
@@ -128,6 +132,8 @@ func (c *SQLiteCache[T]) Set(key string, value T, expiration time.Duration) erro
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	exp := int64(0)
 	if expiration > 0 {
@@ -147,6 +153,8 @@ func (c *SQLiteCache[T]) Del(key string) error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	_, err := c.db.Exec("DELETE FROM cache WHERE key = ?", key)
 	return err
@@ -158,6 +166,8 @@ func (c *SQLiteCache[T]) Exists(key string) (bool, error) {
 	}
 	c.lock.RLock()
 	defer c.lock.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	var expiration int64
 	err := c.db.QueryRow("SELECT expiration FROM cache WHERE key = ?", key).Scan(&expiration)
@@ -179,6 +189,8 @@ func (c *SQLiteCache[T]) Incr(key string) (int64, error) {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	var valueStr string
 	var expiration int64
@@ -210,6 +222,8 @@ func (c *SQLiteCache[T]) Expire(key string, expiration time.Duration) error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	exp := int64(0)
 	if expiration > 0 {
@@ -225,6 +239,8 @@ func (c *SQLiteCache[T]) RPush(key string, value T) error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	b, err := json.Marshal(value)
 	if err != nil {
@@ -235,11 +251,13 @@ func (c *SQLiteCache[T]) RPush(key string, value T) error {
 	return err
 }
 
-func (c *SQLiteCache[T]) BRPop(timeout time.Duration, key string) (T, error) {
+func (c *SQLiteCache[T]) BRPop(sqliteTimeOut time.Duration, key string) (T, error) {
 	var zero T
 	if c == nil {
 		return zero, errors.New("cache not initialized")
 	}
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 	start := time.Now()
 	for {
 		c.lock.Lock()
@@ -256,7 +274,7 @@ func (c *SQLiteCache[T]) BRPop(timeout time.Duration, key string) (T, error) {
 		}
 		c.lock.Unlock()
 
-		if time.Since(start) > timeout {
+		if time.Since(start) > sqliteTimeOut {
 			return zero, ErrCacheMiss
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -269,6 +287,8 @@ func (c *SQLiteCache[T]) Flush() error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 
 	_, err := c.db.Exec("DELETE FROM cache")
 	return err

@@ -1,15 +1,15 @@
 package cache
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	_ "modernc.org/sqlite"
 	"os"
 	"strings"
 	"sync"
-
-	_ "modernc.org/sqlite"
 )
 
 type SQLiteCachePage[T any] struct {
@@ -80,6 +80,8 @@ func NewSQLiteCachePage[T any](name string) (*SQLiteCachePage[T], error) {
 func (c *SQLiteCachePage[T]) ensureTable() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		data TEXT
@@ -91,6 +93,9 @@ func (c *SQLiteCachePage[T]) ensureTable() error {
 func (c *SQLiteCachePage[T]) Put(value T) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -102,6 +107,9 @@ func (c *SQLiteCachePage[T]) Put(value T) error {
 func (c *SQLiteCachePage[T]) Count(conditions map[string]any) (int64, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
 	where, args := buildWhereClause(conditions)
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s`, c.table, where)
 
@@ -113,6 +121,9 @@ func (c *SQLiteCachePage[T]) Count(conditions map[string]any) (int64, error) {
 func (c *SQLiteCachePage[T]) Get(conditions map[string]any) (*T, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
 	where, args := buildWhereClause(conditions)
 	query := fmt.Sprintf(`SELECT data FROM %s %s`, c.table, where)
 
@@ -134,6 +145,9 @@ func (c *SQLiteCachePage[T]) Get(conditions map[string]any) (*T, error) {
 func (c *SQLiteCachePage[T]) Find(page, size int64, conditions map[string]any, sorts ...PageSorter) (*PageCache[T], error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
 	if page < 1 {
 		page = 1
 	}
@@ -184,6 +198,9 @@ func (c *SQLiteCachePage[T]) Find(page, size int64, conditions map[string]any, s
 func (c *SQLiteCachePage[T]) Update(conditions map[string]any, value *T) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
 	if len(conditions) == 0 {
 		return fmt.Errorf("conditions cannot be empty")
 	}
