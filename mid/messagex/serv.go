@@ -103,6 +103,11 @@ func PublishWithCtx(ctx context.Context, topic any, message *Message) *errors.Er
 }
 
 func PublishNewMsg[T any](ctx context.Context, topic any, content T, groupId ...string) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.DPanic(ctx, "PublishNewMsg panic", zap.Any("recover", r))
+		}
+	}()
 	topicStr := getTopicStr(topic)
 	if topicStr == "" {
 		logger.Error(ctx, "PublishNewMsg: topic is empty")
@@ -158,10 +163,44 @@ func ToMap(param interface{}) map[string]interface{} {
 	}
 	// Return the parameter if it is already a map
 	if reflect.TypeOf(param).Kind() == reflect.Map {
-		return param.(map[string]interface{})
+		switch v := param.(type) {
+		case map[string]interface{}:
+			return v
+		case map[string]string:
+			res := make(map[string]interface{}, len(v))
+			for key, val := range v {
+				res[key] = val
+			}
+			return res
+		case map[string]float64:
+			res := make(map[string]interface{}, len(v))
+			for key, val := range v {
+				res[key] = val
+			}
+			return res
+		case map[string]int:
+			res := make(map[string]interface{}, len(v))
+			for key, val := range v {
+				res[key] = val
+			}
+			return res
+		case map[string]int64:
+			res := make(map[string]interface{}, len(v))
+			for key, val := range v {
+				res[key] = val
+			}
+			return res
+		case map[string]bool:
+			res := make(map[string]interface{}, len(v))
+			for key, val := range v {
+				res[key] = val
+			}
+			return res
+		default:
+			return nil
+		}
+		//return param.(map[string]interface{})
 	}
-	// Initialize a nil map for non-struct parameters
-	result := make(map[string]interface{})
 
 	// Get the type and value of the parameter
 	val := reflect.ValueOf(param)
@@ -177,7 +216,7 @@ func ToMap(param interface{}) map[string]interface{} {
 	if val.Kind() != reflect.Struct {
 		return nil
 	}
-
+	result := make(map[string]interface{})
 	// Loop through the struct's fields
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)

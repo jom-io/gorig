@@ -46,6 +46,15 @@ func (p pre) str() string {
 }
 
 func (p pre) ad(s ...string) string {
+	if p.str() == "" {
+		return strings.Join(s, ".")
+	}
+	if strings.HasSuffix(p.str(), ".") {
+		p = pre(p.str()[:len(p.str())-1])
+	}
+	if len(s) == 0 {
+		return p.str()
+	}
 	return p.str() + "." + strings.Join(s, ".")
 }
 
