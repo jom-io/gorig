@@ -1,6 +1,9 @@
-# Gorig
+# Gorig [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jom-io/gorig)
 
-Gorig is a comprehensive web service framework based on the Go programming language. It provides a complete development model and toolchain. You can quickly create a new project or module using `gorig-cli`.
+**Gorig** is a comprehensive web service framework based on the Go programming language. It provides a complete development model and toolchain. You can quickly create a new project or module using `gorig-cli`.
+
+📚 **Project Wiki**: [https://deepwiki.com/jom-io/gorig](https://deepwiki.com/jom-io/gorig)  
+🔧 **Operations Dashboard**: [https://github.com/jom-io/gorig-om](https://github.com/jom-io/gorig-om)
 
 ## Direct Installation
 
