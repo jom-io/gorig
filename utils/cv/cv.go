@@ -74,6 +74,14 @@ func N[T any](o T) *T {
 	return &o
 }
 
+func PN[T any](o *T) T {
+	if o == nil {
+		var zero T
+		return zero
+	}
+	return *o
+}
+
 func PStr(s *string) string {
 	if s == nil {
 		return ""

@@ -105,8 +105,8 @@ func (c *SQLiteCachePage[T]) Put(value T) error {
 }
 
 func (c *SQLiteCachePage[T]) Count(conditions map[string]any) (int64, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	//c.mu.RLock()
+	//defer c.mu.RUnlock()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
@@ -119,8 +119,8 @@ func (c *SQLiteCachePage[T]) Count(conditions map[string]any) (int64, error) {
 }
 
 func (c *SQLiteCachePage[T]) Get(conditions map[string]any) (*T, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	//c.mu.RLock()
+	//defer c.mu.RUnlock()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
@@ -143,8 +143,8 @@ func (c *SQLiteCachePage[T]) Get(conditions map[string]any) (*T, error) {
 }
 
 func (c *SQLiteCachePage[T]) Find(page, size int64, conditions map[string]any, sorts ...PageSorter) (*PageCache[T], error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	//c.mu.RLock()
+	//defer c.mu.RUnlock()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
