@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/apix"
 	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/utils/logger"
 	"go.uber.org/zap"
@@ -12,7 +13,7 @@ var restLogger = logger.GetLogger("rest")
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer restLogger.Sync()
-		SetTraceID(c)
+		apix.SetTraceID(c)
 		restLogger.Info("IN", doGetArrForIn(c)...)
 
 		c.Next()
@@ -23,7 +24,7 @@ func Logger() gin.HandlerFunc {
 
 func doGetArrForIn(c *gin.Context) []zap.Field {
 	return []zap.Field{
-		zap.String(consts.TraceIDKey, GetTraceID(c)),
+		zap.String(consts.TraceIDKey, apix.GetTraceID(c)),
 		zap.String("method", c.Request.Method),
 		zap.String("uri", c.Request.RequestURI),
 		zap.String("remoteAddr", c.Request.RemoteAddr),
@@ -34,7 +35,7 @@ func doGetArrForIn(c *gin.Context) []zap.Field {
 
 func doGetArrForOut(c *gin.Context) []zap.Field {
 	return []zap.Field{
-		zap.String(consts.TraceIDKey, GetTraceID(c)),
+		zap.String(consts.TraceIDKey, apix.GetTraceID(c)),
 		zap.Int("status", c.Writer.Status()),
 	}
 }

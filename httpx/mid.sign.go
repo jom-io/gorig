@@ -3,6 +3,7 @@ package httpx
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/apix"
 	"github.com/jom-io/gorig/apix/response"
 	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/mid/tokenx"
@@ -40,13 +41,13 @@ func sign(merType tokenx.ManagerType, userFilter map[string]interface{}) gin.Han
 		userID, exisit := get.Manager.GetUserID(token)
 		if exisit {
 			c.Set(consts.TokenKey, token)
-			SetUserID(c, userID)
+			apix.SetUserID(c, userID)
 			if claims, err := get.Generator.Parse(token); err != nil {
 				response.ErrorTokenAuthFail(c)
 			} else if !filterUserInfo(claims.UserInfo, userFilter) {
 				response.ErrorForbidden(c)
 			} else {
-				SetUserInfo(c, claims.UserInfo)
+				apix.SetUserInfo(c, claims.UserInfo)
 				c.Next()
 			}
 		} else {

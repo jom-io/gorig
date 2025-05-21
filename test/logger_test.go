@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/jom-io/gorig/httpx"
+	"github.com/jom-io/gorig/apix"
 	"github.com/jom-io/gorig/utils/logger"
 	"testing"
 )
@@ -21,7 +21,7 @@ func TestLogger(t *testing.T) {
 	logger.DPanic(ctx, "test dpanic")
 	logger.DPanic(nil, "test nil dpanic")
 
-	ginCtx := httpx.NewCtx()
+	ginCtx := apix.NewCtx()
 	logger.Info(ginCtx, "test gin info")
 
 	var ginCtxNil *gin.Context

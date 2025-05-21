@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/jom-io/gorig/apix/response"
 	_ "github.com/jom-io/gorig/domainx"
+	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/sys"
 	"net/http"
@@ -70,20 +72,19 @@ var gEngine = gin.New()
 var gHttpServer *http.Server
 
 func init() {
-	gEngine.Use(CORS())
-	gEngine.Use(Logger())
-	gEngine.Use(Debounce(200 * time.Millisecond))
-	//gEngine.Use(IdemVerify())
-	//gEngine.Use(SignVerify())
-	gEngine.Use(gzip.Gzip(gzip.DefaultCompression))
 	if !sys.RunMode.IsRd() {
 		gin.SetMode(gin.ReleaseMode)
 	}
+	gEngine.Use(Recovery())
+	gEngine.Use(Logger())
+	gEngine.Use(CORS())
+	gEngine.Use(gzip.Gzip(gzip.DefaultCompression))
+	gEngine.Use(Debounce(200 * time.Millisecond))
+	//gEngine.Use(IdemVerify())
+	//gEngine.Use(SignVerify())
 	RegisterRouter(func(groupRouter *gin.RouterGroup) {
 		groupRouter.GET("ping", func(ctx *gin.Context) {
-			Success(ctx, gin.H{
-				"timestamp": fmt.Sprintf("%d", time.Now().UnixMilli()),
-			})
+			response.Success(ctx, consts.CurdStatusOkMsg, fmt.Sprintf("timestamp %s", time.Now().UnixMilli()))
 		})
 	})
 }

@@ -13,7 +13,7 @@ import (
 
 const Tocamel = "toCamel"
 
-func toCamel(g *interface{}) any {
+func toCamel(g interface{}) any {
 	if g == nil {
 		return g
 	}
@@ -55,7 +55,7 @@ func GetToCamel(c *gin.Context) bool {
 	return false
 }
 
-func ReturnJson(context *gin.Context, httpCode int, dataCode int, msg string, data *interface{}) {
+func ReturnJson(context *gin.Context, httpCode int, dataCode int, msg string, data interface{}) {
 	if context.Writer.Written() {
 		return
 	}
@@ -80,7 +80,7 @@ func S(c *gin.Context) {
 	ReturnJson(c, http.StatusOK, consts.CurdStatusOkCode, consts.CurdStatusOkMsg, nil)
 }
 
-func Success(c *gin.Context, msg string, data *interface{}) {
+func Success(c *gin.Context, msg string, data interface{}) {
 	if msg == "" {
 		msg = consts.CurdStatusOkMsg
 	}
@@ -88,7 +88,7 @@ func Success(c *gin.Context, msg string, data *interface{}) {
 	c.Abort()
 }
 
-func Fail(c *gin.Context, dataCode int, msg string, data *interface{}) {
+func Fail(c *gin.Context, dataCode int, msg string, data interface{}) {
 	ReturnJson(c, http.StatusBadRequest, dataCode, msg, data)
 	c.Abort()
 }
