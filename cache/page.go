@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jom-io/gorig/utils/logger"
 	"path/filepath"
@@ -25,6 +26,14 @@ type PageCache[T any] struct {
 	Page  int64 `json:"page"`
 	Size  int64 `json:"size"`
 	Items []*T  `json:"items"`
+}
+
+func (p *PageCache[T]) JSON() string {
+	jsonStr, err := json.Marshal(p)
+	if err != nil {
+		return "{}"
+	}
+	return string(jsonStr)
 }
 
 func PageSorterAsc(field string) PageSorter {

@@ -124,10 +124,10 @@ func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interfac
 }
 
 func Bind(ctx *gin.Context, req interface{}) (err *errors.Error) {
-	return BindParams(ctx, req)
+	return BindParams(ctx, req, false)
 }
 
-func BindParams(ctx *gin.Context, req interface{}) (err *errors.Error) {
+func BindParams(ctx *gin.Context, req interface{}, noPrint ...bool) (err *errors.Error) {
 	if ctx.IsAborted() {
 		return errors.Verify("BindParams: ctx is aborted")
 	}
@@ -149,7 +149,9 @@ func BindParams(ctx *gin.Context, req interface{}) (err *errors.Error) {
 		response.ValidatorError(ctx, err)
 		return errors.Verify(fmt.Sprintf("BindParams: %v", err))
 	}
-	logger.Info(ctx, "BindParams", zap.Any("req", req))
+	if len(noPrint) == 0 || !noPrint[0] {
+		logger.Info(ctx, "BindParams", zap.Any("req", req))
+	}
 	return nil
 }
 
