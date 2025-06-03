@@ -40,7 +40,7 @@ func initRedisCache() {
 	password := configure.GetString("redis.password")
 	db := configure.GetString("redis.db")
 	if addr == "" {
-		sys.Info("# Redis addr is empty, skipping initialization")
+		//sys.Info("# Redis addr is empty, skipping initialization")
 		return
 	}
 

@@ -6,15 +6,29 @@ import (
 	"fmt"
 	"github.com/jom-io/gorig/utils/logger"
 	"path/filepath"
+	"time"
 )
 
-type PageStorage[T any] interface {
+type Pager[T any] interface {
 	Put(value T) error
 	Find(page, size int64, conditions map[string]any, sort ...PageSorter) (*PageCache[T], error)
 	Get(conditions map[string]any) (*T, error)
 	Count(conditions map[string]any) (int64, error)
 	Update(conditions map[string]any, value *T) error
+	Delete(conditions map[string]any) error
+	GroupByTime(conditions map[string]any, from, to time.Time, granularity Granularity, fields ...string) ([]*PageTimeItem, error)
 }
+
+type Granularity string
+
+const (
+	GranularityMinute Granularity = "minute"
+	GranularityHour   Granularity = "hour"
+	GranularityDay    Granularity = "day"
+	GranularityWeek   Granularity = "week"
+	GranularityMonth  Granularity = "month"
+	GranularityYear   Granularity = "year"
+)
 
 type PageSorter struct {
 	SortField string
@@ -26,6 +40,11 @@ type PageCache[T any] struct {
 	Page  int64 `json:"page"`
 	Size  int64 `json:"size"`
 	Items []*T  `json:"items"`
+}
+
+type PageTimeItem struct {
+	At    string             `json:"at"`
+	Value map[string]float64 `json:"value"`
 }
 
 func (p *PageCache[T]) JSON() string {
@@ -50,7 +69,7 @@ func PageSorterDesc(field string) PageSorter {
 	}
 }
 
-func NewPageStorage[T any](ctx context.Context, t Type, args ...any) PageStorage[T] {
+func NewPager[T any](ctx context.Context, t Type, args ...any) Pager[T] {
 	switch t {
 	case Sqlite:
 		if len(args) < 1 {

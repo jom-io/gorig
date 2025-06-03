@@ -114,11 +114,8 @@ func WrapCronTask(f func(ctx context.Context), timeout ...time.Duration) func() 
 	}
 }
 
-func init() {
-	c = cron.New(cron.WithSeconds())
-}
-
 func start() {
+	c = cron.New(cron.WithSeconds())
 	if c != nil {
 		c.Stop()
 	}

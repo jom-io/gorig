@@ -10,6 +10,7 @@ import (
 	"github.com/jom-io/gorig/utils/logger"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -279,6 +280,7 @@ func GetParamFloat64(ctx *gin.Context, key string, force Forcible, defValue ...f
 	return 0, nil
 }
 
+// Recommended Use of URLSearchParams for Array Parameter Queries
 func GetParamArray[t any](ctx *gin.Context, key string, force Forcible, defValue ...[]t) (value []t, err *errors.Error) {
 	if ctx.IsAborted() && ctx.GetString(ErrorKey) != "" {
 		return nil, errors.Verify(ctx.GetString(ErrorKey))
@@ -318,10 +320,38 @@ func GetParamArray[t any](ctx *gin.Context, key string, force Forcible, defValue
 		case []bool:
 			slice := cast.ToBoolSlice(v)
 			return any(slice).([]t), nil
+		case interface{}:
+			slice := cast.ToStringSlice(v)
+
+			if len(slice) == 0 || (len(slice) == 1 && slice[0] == "") {
+				if len(defValue) > 0 {
+					return defValue[0], nil
+				}
+				err := errors.Verify(fmt.Sprintf("GetParam: %s is empty", key))
+				if force {
+					response.ValidatorError(ctx, err)
+					return nil, err
+				}
+				return nil, nil
+			}
+
+			typ := reflect.TypeOf((*t)(nil)).Elem()
+			if typ.Kind() != reflect.String {
+				err := errors.Verify(fmt.Sprintf("GetParam: %s must be a string-based type", key))
+				response.ValidatorError(ctx, err)
+				return nil, err
+			}
+
+			result := reflect.MakeSlice(reflect.SliceOf(typ), len(slice), len(slice))
+			for i, s := range slice {
+				result.Index(i).Set(reflect.ValueOf(s).Convert(typ))
+			}
+			return result.Interface().([]t), nil
 		default:
 			if get, castOK := v.([]t); castOK {
 				return get, nil
 			} else {
+				response.ValidatorError(ctx, errors.Verify(fmt.Sprintf("GetParam: %s type error", key)))
 				return value, errors.Verify(fmt.Sprintf("GetParam: %s type error", key))
 			}
 		}
