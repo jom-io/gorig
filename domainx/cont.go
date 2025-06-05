@@ -4,7 +4,6 @@ type ConType string
 
 const (
 	Mysql ConType = "mysql"
-	Redis ConType = "redis"
 	Mongo ConType = "mongo"
 )
 

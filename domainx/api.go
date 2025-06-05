@@ -1,6 +1,7 @@
 package domainx
 
 import (
+	"context"
 	"fmt"
 	"github.com/jom-io/gorig/apix/load"
 	"github.com/jom-io/gorig/utils/errors"
@@ -8,8 +9,12 @@ import (
 	"strings"
 )
 
-func UseCon(conType ConType, dbName string, table string) *Con {
+func UseCon(ctx context.Context, conType ConType, dbName string, table string) *Con {
 	con := new(Con)
+	con.Ctx = ctx
+	if con.Ctx == nil {
+		con.Ctx = context.Background()
+	}
 	con.ConType = conType
 	con.DBName = dbName
 	con.GTable = table
@@ -19,7 +24,6 @@ func UseCon(conType ConType, dbName string, table string) *Con {
 			con.DB = connDb
 			return con
 		}
-	case Redis:
 	case Mongo:
 		if coneDb := UseMongoDbConn(dbName); coneDb != nil {
 			con.MDB = coneDb
@@ -114,7 +118,7 @@ func FindByIDs[T any](c *Con, ids []int64, result *[]T) *errors.Error {
 	return FindByMatch(c, *matchList, result, "con")
 }
 
-func save(c *Con, data Identifiable, version int, newIDs ...int64) (id int64, err *errors.Error) {
+func save(c *Con, data Identifiable, version int, newIDs ...int64) (int64, *errors.Error) {
 	if c == nil {
 		return 0, errors.Sys("con not init")
 	}
@@ -351,6 +355,28 @@ func FindByPage[T Identifiable](c *Con, condition map[string]interface{}, page *
 }
 
 func FindByPageMatch[T Identifiable](c *Con, matchList []Match, page *load.Page, pageResp *load.PageResp, result *[]T, prefixes ...string) *errors.Error {
+	if c == nil {
+		return errors.Sys("con not init")
+	}
+	if result == nil {
+		result = &[]T{}
+	}
+	if pageResp == nil {
+		return errors.Sys("pageResp is nil")
+	}
+
+	dbService := GetDBService(c.GetConType())
+
+	total := new(load.Total)
+	gErr := dbService.FindByPageMatch(c, matchList, page, total, result, prefixes...)
+	if gErr != nil {
+		return c.HandleWithErr(gErr)
+	}
+	pageResp.Build(page, total, GetLastID(*result), result)
+	return nil
+}
+
+func FindByPageMatchT[T Identifiable](c *Con, matchList []Match, page *load.Page, pageResp *load.PageRespT[T], result *[]T, prefixes ...string) *errors.Error {
 	if c == nil {
 		return errors.Sys("con not init")
 	}

@@ -241,7 +241,7 @@ func (s *mongoDBService) GetByID(c *Con, id int64, result interface{}) error {
 	if e != nil {
 		return e
 	}
-	if err := gColl.Find(context.Background(), map[string]interface{}{"con.id": id}).One(result); err != nil {
+	if err := gColl.Find(c.Ctx, map[string]interface{}{"con.id": id}).One(result); err != nil {
 		return err
 	}
 	return nil
@@ -253,7 +253,7 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ..
 	} else {
 		if c.GetID().NotNil() {
 			c.SaveUpdateTime()
-			mErr := coll.UpdateOne(context.Background(), bson.M{"con.id": c.ID}, bson.M{"$set": data})
+			mErr := coll.UpdateOne(c.Ctx, bson.M{"con.id": c.ID}, bson.M{"$set": data})
 			if mErr != nil {
 				return 0, mErr
 			}
@@ -270,7 +270,7 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ..
 			if c.SaveUpdateTime != nil {
 				c.SaveUpdateTime()
 			}
-			one, mErr := coll.InsertOne(context.Background(), data)
+			one, mErr := coll.InsertOne(c.Ctx, data)
 			if mErr != nil {
 				return 0, mErr
 			}
@@ -288,7 +288,7 @@ func (s *mongoDBService) UpdatePart(c *Con, id int64, data map[string]interface{
 	} else {
 		m := mapToBsonM(data)
 		m["options.updateTime"] = time.Now()
-		mErr := coll.UpdateOne(context.Background(), bson.M{"con.id": id}, bson.M{"$set": mapToBsonM(data)})
+		mErr := coll.UpdateOne(c.Ctx, bson.M{"con.id": id}, bson.M{"$set": mapToBsonM(data)})
 		return mErr
 	}
 }
@@ -298,7 +298,7 @@ func (s *mongoDBService) UpdateByMatch(c *Con, matchList []Match, data map[strin
 		return e
 	} else {
 		condition := matchMongoCond(matchList)
-		_, mErr := coll.UpdateAll(context.Background(), mapToBsonM(condition), bson.M{"$set": mapToBsonM(data)})
+		_, mErr := coll.UpdateAll(c.Ctx, mapToBsonM(condition), bson.M{"$set": mapToBsonM(data)})
 		return mErr
 	}
 }
@@ -307,7 +307,7 @@ func (s *mongoDBService) Delete(c *Con, data Identifiable) error {
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Remove(context.Background(), bson.M{"con.id": data.GetID()})
+		mErr := coll.Remove(c.Ctx, bson.M{"con.id": data.GetID()})
 		return mErr
 	}
 }
@@ -317,7 +317,7 @@ func (s *mongoDBService) DeleteByMatch(c *Con, matchList []Match) error {
 		return e
 	} else {
 		condition := matchMongoCond(matchList)
-		_, mErr := coll.RemoveAll(context.Background(), mapToBsonM(condition))
+		_, mErr := coll.RemoveAll(c.Ctx, mapToBsonM(condition))
 		return mErr
 	}
 }
@@ -461,7 +461,7 @@ func (s *mongoDBService) FindByMatch(c *Con, matchList []Match, result interface
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(context.Background(), mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(10000).All(result)
+		mErr := coll.Find(c.Ctx, mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(10000).All(result)
 		return mErr
 	}
 }
@@ -471,7 +471,7 @@ func (s *mongoDBService) GetByMatch(c *Con, matchList []Match, result interface{
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(context.Background(), mapToBsonM(condition)).Sort(sortMongoFields(c.Sort)...).One(result)
+		mErr := coll.Find(c.Ctx, mapToBsonM(condition)).Sort(sortMongoFields(c.Sort)...).One(result)
 		return mErr
 	}
 }
@@ -481,7 +481,7 @@ func (s *mongoDBService) CountByMatch(c *Con, matchList []Match) (int64, error) 
 	if coll, e := getColl(c); e != nil {
 		return 0, e
 	} else {
-		count, mErr := coll.Find(context.Background(), mapToBsonM(condition)).Count()
+		count, mErr := coll.Find(c.Ctx, mapToBsonM(condition)).Count()
 		if mErr != nil {
 			return 0, mErr
 		}
@@ -504,7 +504,7 @@ func (s *mongoDBService) SumByMatch(c *Con, matchList []Match, field string) (fl
 			{"$group": bson.M{"_id": nil, "sum": bson.M{"$sum": "$" + preData.ad(field)}}},
 		}
 
-		if mErr := coll.Aggregate(context.Background(), aggregationPipeline).All(&result); mErr != nil {
+		if mErr := coll.Aggregate(c.Ctx, aggregationPipeline).All(&result); mErr != nil {
 			return 0, mErr
 		}
 
@@ -526,13 +526,13 @@ func (s *mongoDBService) FindByPageMatch(c *Con, matchList []Match, page *load.P
 		if page.LastID > 0 {
 			m := mapToBsonM(condition, prefixes...)
 			m["con.id"] = bson.M{"$lt": page.LastID}
-			count, _ = coll.Find(context.Background(), m).Count()
-			mErr = coll.Find(context.Background(), m).Sort(sortMongoFields(c.Sort)...).Limit(page.Size).All(result)
+			count, _ = coll.Find(c.Ctx, m).Count()
+			mErr = coll.Find(c.Ctx, m).Sort(sortMongoFields(c.Sort)...).Limit(page.Size).All(result)
 		} else {
 			bsonM := mapToBsonM(condition, prefixes...)
-			count, _ = coll.Find(context.Background(), bsonM).Count()
+			count, _ = coll.Find(c.Ctx, bsonM).Count()
 			skip := (page.Page - 1) * page.Size
-			mErr = coll.Find(context.Background(), bsonM).Sort(sortMongoFields(c.Sort)...).Skip(skip).Limit(page.Size).All(result)
+			mErr = coll.Find(c.Ctx, bsonM).Sort(sortMongoFields(c.Sort)...).Skip(skip).Limit(page.Size).All(result)
 		}
 		total.Set(count)
 		if mErr != nil {

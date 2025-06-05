@@ -46,6 +46,21 @@ func RegisterService(service ...Service) *errors.Error {
 	return nil
 }
 
+func StartCode(code string) *errors.Error {
+	service, exists := gServices[code]
+	if !exists {
+		return errors.Sys(fmt.Sprintf("The service not found.[ code=%s ]", code))
+	}
+	if service.Startup == nil {
+		return errors.Sys(fmt.Sprintf("The service startup function is nil.[ code=%s ]", code))
+	}
+	err := service.Startup(code, service.PORT)
+	if err != nil {
+		return errors.Sys(fmt.Sprintf("The service startup error.[ code=%s ]: %v", code, err))
+	}
+	return nil
+}
+
 func Running() {
 	for code, service := range gServices {
 		sys.Warn("# Start the service: ", code, " ...... #")

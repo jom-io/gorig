@@ -83,7 +83,6 @@ func (*gormDBService) Migrate(con *Con, tableName string, value ConTable, indexL
 }
 
 func (*gormDBService) End() error {
-	// 关闭数据库连接 删除数据库连接
 	for k, _ := range gormDbMysqlMap {
 		delete(gormDbMysqlMap, k)
 	}
@@ -93,7 +92,6 @@ func (*gormDBService) End() error {
 
 func initMysqlDB(dbname ...string) {
 	if len(dbname) > 0 {
-		// 循环初始化数据库
 		for _, v := range dbname {
 			if dbMysql, err := gormt.GetOneMysqlClient(v); err != nil {
 				logger.Logger.Fatal(fmt.Sprintf("Mysql."+v+" init fail: %s", err.Error()))
@@ -105,11 +103,11 @@ func initMysqlDB(dbname ...string) {
 }
 
 func (s *gormDBService) GetByID(c *Con, id int64, result interface{}) error {
-	if c.DB == nil {
+	if c.WithContext(c.Ctx) == nil {
 		return fmt.Errorf("get db is nil")
 	}
 	//result = make(map[string]interface{})
-	if err := c.DB.Table(c.TableName()).Where("id = ?", id).First(result).Error; err != nil {
+	if err := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).First(result).Error; err != nil {
 		return err
 	}
 	return nil
@@ -117,25 +115,26 @@ func (s *gormDBService) GetByID(c *Con, id int64, result interface{}) error {
 
 func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...int) (id int64, err error) {
 	var tx *gorm.DB
+
 	if c.GetID().IsNil() {
 		if newID != 0 {
 			c.ID = newID
 		}
-		tx = c.DB.Table(c.TableName()).Create(data)
+		tx = c.WithContext(c.Ctx).Table(c.TableName()).Create(data)
 	} else {
 		if version != nil && len(version) > 0 && version[0] > 0 {
-			tx = c.DB.Table(c.TableName()).Where("id", data.GetID()).Updates(data)
+			tx = c.WithContext(c.Ctx).Table(c.TableName()).Where("id", data.GetID()).Updates(data)
 		} else {
-			if eg := c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Count(&id); eg.Error != nil {
+			if eg := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Count(&id); eg.Error != nil {
 				return 0, eg.Error
 			}
 			if id == 0 {
-				tx = c.DB.Table(c.TableName()).Create(data)
+				tx = c.WithContext(c.Ctx).Table(c.TableName()).Create(data)
 			} else {
-				tx = c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Updates(data)
+				tx = c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Updates(data)
 			}
 		}
-		//tx = c.DB.Table(c.TableName()).Save(data)
+		//tx = c.WithContext(c.Ctx).Table(c.TableName()).Save(data)
 	}
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -145,14 +144,14 @@ func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...
 
 func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {
 	data["updated_at"] = time.Now()
-	if err := c.DB.Table(c.TableName()).Where("id = ?", id).Updates(data).Error; err != nil {
+	if err := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).Updates(data).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) error {
-	tx := c.DB.Table(c.TableName())
+	tx := c.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	data["updated_at"] = time.Now()
 	if err := tx.Updates(data).Error; err != nil {
@@ -162,14 +161,14 @@ func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string
 }
 
 func (s *gormDBService) Delete(c *Con, data Identifiable) error {
-	if err := c.DB.Table(c.TableName()).Where("id = ?", data.GetID()).Delete(&data).Error; err != nil {
+	if err := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Delete(&Options{}).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *gormDBService) DeleteByMatch(c *Con, matchList []Match) error {
-	tx := c.DB.Table(c.TableName())
+	tx := c.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	if err := tx.Delete(&Options{}).Error; err != nil {
 		return err
@@ -247,7 +246,7 @@ func sortMysqlCond(sortList Sorts, tx *gorm.DB) {
 }
 
 func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
-	tx := c.DB.Table(c.TableName())
+	tx := c.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	if err := tx.Limit(10000).Find(result).Error; err != nil {
@@ -257,7 +256,7 @@ func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{
 }
 
 func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
-	tx := c.DB.Table(c.TableName())
+	tx := c.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	if err := tx.First(result).Error; err != nil {
@@ -267,7 +266,7 @@ func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}
 }
 
 func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
-	tx := c.DB.Table(c.TableName()).Where("deleted_at is null")
+	tx := c.WithContext(c.Ctx).Table(c.TableName()).Where("deleted_at is null")
 	matchMysqlCond(matchList, tx)
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {
@@ -277,7 +276,7 @@ func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 }
 
 func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (float64, error) {
-	tx := c.DB.Table(c.TableName())
+	tx := c.WithContext(c.Ctx).Table(c.TableName())
 	if !Check(field) {
 		return 0, errors.Sys(fmt.Sprintf("field is not valid: %s", field))
 	}
@@ -293,7 +292,7 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 }
 
 func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
-	tx := c.DB.Table(c.TableName())
+	tx := c.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	count := int64(0)

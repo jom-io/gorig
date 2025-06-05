@@ -1,8 +1,8 @@
 package load
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"github.com/jom-io/gorig/utils/logger"
 	"go.uber.org/zap"
 )
@@ -69,7 +69,7 @@ func (p *Page) SetPage(page int64) {
 //	GetID() int64
 //}
 
-func BuildPage(ctx *gin.Context, page, pageSize, lastId int64) *Page {
+func BuildPage(ctx context.Context, page, pageSize, lastId int64) *Page {
 	if page <= 0 {
 		logger.Warn(ctx, "page is less than 0, set to 1")
 		page = 1
@@ -94,6 +94,14 @@ func BuildPage(ctx *gin.Context, page, pageSize, lastId int64) *Page {
 }
 
 func (r *PageResp) Build(page *Page, total *Total, LastID int64, result any) {
+	r.Page = page.Page
+	r.Size = page.Size
+	r.Total = total
+	r.LastID = LastID
+	r.Result = result
+}
+
+func (r *PageRespT[T]) Build(page *Page, total *Total, LastID int64, result *[]T) {
 	r.Page = page.Page
 	r.Size = page.Size
 	r.Total = total

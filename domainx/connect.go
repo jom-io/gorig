@@ -1,13 +1,15 @@
 package domainx
 
 import (
+	"context"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/qiniu/qmgo"
 	"gorm.io/gorm"
 )
 
 type Con struct {
-	ID             int64 `gorm:"primaryKey" bson:"id" json:"id"`
+	Ctx            context.Context `gorm:"-" bson:"-" json:"-"`
+	ID             int64           `gorm:"primaryKey" bson:"id" json:"id"`
 	ConType        `gorm:"-" bson:"-" json:"-"`
 	*gorm.DB       `gorm:"-" bson:"-" json:"-"`
 	MDB            *qmgo.Client `gorm:"-" bson:"-" json:"-"`

@@ -5,13 +5,15 @@ import (
 	"github.com/jom-io/gorig/utils/sys"
 )
 
+const ServiceCode = "DATABASE"
+
 func init() {
 	if service == nil {
 		service = new(serviceInfo)
 	}
 	if err := serv.RegisterService(
 		serv.Service{
-			Code:     "DATABASE",
+			Code:     ServiceCode,
 			Startup:  service.Start,
 			Shutdown: service.End,
 		},
