@@ -54,7 +54,7 @@ func TestTestModel_CRUD(t *testing.T) {
 
 	t.Run("Save", func(t *testing.T) {
 		model := setupTestModel()
-		nID, err := dx.On[TestModel](ctx, model).Save()
+		nID, err := dx.On(ctx, model).Save()
 		id = nID
 		if err != nil {
 			t.Fatalf("Failed to save TestModel: %v", err)
@@ -93,7 +93,7 @@ func TestTestModel_CRUD(t *testing.T) {
 	})
 
 	t.Run("Find", func(t *testing.T) {
-		results, err := dx.On[TestModel](ctx).Eq("test_field1", "example").Find()
+		results, err := dx.On[TestModel](ctx).Eq("test_field1", "example").Sort("id").Find()
 		if err != nil {
 			t.Fatalf("Failed to find models: %v", err)
 		}

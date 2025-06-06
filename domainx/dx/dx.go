@@ -9,7 +9,6 @@ import (
 
 type (
 	dx[T any] struct {
-		on      bool
 		ctx     context.Context
 		complex *domainx.Complex[T]
 		matches *domainx.Matches
@@ -27,11 +26,12 @@ type (
 		GetCon() *domainx.Con
 		SetID(id int64)
 		GetID() domainx.ID
-		WithID(id int64) DQuery[T]
 		GenerateID() DQuery[T]
 		isNil() bool
 		IsZero() bool
 
+		WithID(id int64) DQuery[T]
+		// Eq Ne Gt Gte Lt Lte Like In NotIn ignore is used to ignore the field empty check
 		Eq(field string, value interface{}, ignore ...bool) DQuery[T]
 		Ne(field string, value interface{}, ignore ...bool) DQuery[T]
 		Gt(field string, value interface{}, ignore ...bool) DQuery[T]
@@ -46,6 +46,7 @@ type (
 		NearLoc(localField string, lat, lng, distance float64) DQuery[T]
 		AddMatch(m *domainx.Match) DQuery[T]
 		AddMatches(ms *domainx.Matches) DQuery[T]
+		Sort(field string, asc ...bool) DQuery[T]
 
 		Save(t ...*T) (id int64, err *errors.Error)
 		checkMatches() *errors.Error
@@ -194,6 +195,14 @@ func (d *dx[T]) AddMatch(m *domainx.Match) DQuery[T] {
 
 func (d *dx[T]) AddMatches(ms *domainx.Matches) DQuery[T] {
 	d.matches.AddMatches(ms)
+	return d
+}
+
+func (d *dx[T]) Sort(field string, asc ...bool) DQuery[T] {
+	if field == "" {
+		return d
+	}
+	d.complex.Sort.AddSort(field, len(asc) > 0 && asc[0])
 	return d
 }
 
