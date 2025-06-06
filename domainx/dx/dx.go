@@ -66,7 +66,7 @@ func On[T any, PT interface {
 	DTable
 }](ctx context.Context, t ...*T) DQuery[T] {
 	var inst T
-	if len(t) > 0 && any(t[0]) != nil {
+	if len(t) > 0 && any(t[0]) != nil && t[0] != nil {
 		inst = *t[0]
 	} else {
 		inst = *new(T)

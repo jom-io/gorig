@@ -67,9 +67,7 @@ func CreateComplex[T any](ctx context.Context, conType ConType, dbName string, t
 	}
 
 	var newData T
-	if any(data) == nil {
-		newData = *new(T)
-	} else {
+	if any(data) != nil && data != nil {
 		newData = *data
 	}
 

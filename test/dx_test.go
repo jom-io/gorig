@@ -52,6 +52,14 @@ func TestTestModel_CRUD(t *testing.T) {
 
 	var id int64
 
+	t.Run("Init", func(t *testing.T) {
+		data := dx.On(ctx, setupTestModel()).GetData()
+		if data == nil {
+			t.Fatal("Failed to initialize TestModel data")
+		}
+		t.Logf("Initialized TestModel: %+v", data)
+	})
+
 	t.Run("Save", func(t *testing.T) {
 		model := setupTestModel()
 		nID, err := dx.On(ctx, model).Save()
