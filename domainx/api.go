@@ -21,12 +21,12 @@ func UseCon(ctx context.Context, conType ConType, dbName string, table string) *
 	switch conType {
 	case Mysql:
 		if connDb := UseDbConn(dbName); connDb != nil {
-			con.DB = connDb
+			con.MysqlDB = connDb
 			return con
 		}
 	case Mongo:
 		if coneDb := UseMongoDbConn(dbName); coneDb != nil {
-			con.MDB = coneDb
+			con.MongoDB = coneDb
 			return con
 		}
 	}

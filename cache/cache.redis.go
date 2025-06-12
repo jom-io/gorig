@@ -142,7 +142,11 @@ func (r *RedisCache[T]) RPush(key string, value T) error {
 	if GetRedisInstance(r) == nil {
 		return fmt.Errorf("redis client is nil")
 	}
-	return r.Client.RPush(r.Ctx, key, value).Err()
+	b, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return r.Client.RPush(r.Ctx, key, b).Err()
 }
 
 func (r *RedisCache[T]) BRPop(timeout time.Duration, key string) (value T, err error) {
@@ -156,11 +160,12 @@ func (r *RedisCache[T]) BRPop(timeout time.Duration, key string) (value T, err e
 		}
 		return value, err
 	}
+
 	if len(result) != 2 {
 		return value, fmt.Errorf("invalid result length from BRPop for key %s", key)
 	}
-	var data T
-	if err = json.Unmarshal([]byte(result[1]), &data); err != nil {
+
+	if err = json.Unmarshal([]byte(result[1]), &value); err != nil {
 		return value, err
 	}
 	return

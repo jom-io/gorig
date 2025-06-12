@@ -67,7 +67,7 @@ func UseMongoDbConn(dbname string) *qmgo.Client {
 	}
 	dbname = strings.ToLower(dbname)
 	if _, ok := qmMDBMap[dbname]; !ok {
-		logger.Logger.Error(fmt.Sprintf(errc.ErrorsNotInitGlobalPointer, dbname))
+		logger.Logger.Error(fmt.Sprintf(errc.ErrorsNotInitGlobalPointer, configName, dbname))
 		return nil
 	}
 	return qmMDBMap[dbname]
@@ -90,7 +90,7 @@ func (*mongoDBService) Start() error {
 }
 
 func getColl(c *Con) (*qmgo.Collection, *errors.Error) {
-	mDb := c.MDB
+	mDb := c.MongoDB
 	gDdb, e := ddbCon(mDb, c.DBName)
 	if e != nil {
 		return nil, e
@@ -103,7 +103,7 @@ func getColl(c *Con) (*qmgo.Collection, *errors.Error) {
 }
 
 func (s *mongoDBService) Migrate(con *Con, tableName string, value ConTable, indexList []Index) error {
-	if con.MDB == nil {
+	if con.MongoDB == nil {
 		return errors.Sys("Migrate: mdb is nil")
 	}
 	if coll, e := getColl(con); e != nil {

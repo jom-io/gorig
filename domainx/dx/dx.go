@@ -84,9 +84,6 @@ func On[T any, PT interface {
 
 func (d *dx[T]) WithContext(ctx context.Context) DQuery[T] {
 	d.ctx = ctx
-	if d.complex != nil {
-		d.complex.Con.WithContext(ctx)
-	}
 	return d
 }
 

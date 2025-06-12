@@ -27,16 +27,6 @@ func (t *TestModel) DConfig() (domainx.ConType, string, string) {
 //	return domainx.Mongo, "main", "test_model"
 //}
 
-func init() {
-	domainx.AutoMigrate(func() (value domainx.ConTable) {
-		return dx.On[TestModel](context.Background()).Complex()
-	})
-
-	if codeErr := serv.StartCode(domainx.ServiceCode); codeErr != nil {
-		panic(codeErr)
-	}
-}
-
 func setupTestModel() *TestModel {
 	return &TestModel{
 		TestField1: "example",
@@ -48,6 +38,13 @@ func setupTestModel() *TestModel {
 
 func TestTestModel_CRUD(t *testing.T) {
 	ctx := context.Background()
+	domainx.AutoMigrate(func() (value domainx.ConTable) {
+		return dx.On[TestModel](ctx).Complex()
+	})
+
+	if codeErr := serv.StartCode(domainx.ServiceCode); codeErr != nil {
+		panic(codeErr)
+	}
 	time.Sleep(3 * time.Second)
 
 	var id int64

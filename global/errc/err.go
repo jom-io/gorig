@@ -23,7 +23,7 @@ const (
 	ErrorsParseTokenFail         string = "Failed to parse token"
 	ErrorsDBInitFail             string = "%s Database driver, connection initialization failed"
 	ErrorsCasbinNoAuthorization  string = "Casbin authentication failed, please check the casbin setting parameters in the background"
-	ErrorsNotInitGlobalPointer   string = "%s db connection not initialized"
+	ErrorsNotInitGlobalPointer   string = "%s %s db connection not initialized"
 	// Database part
 	ErrorsDbDriverNotExists        string = "Database driver type does not exist, currently supported database types: mysql, sqlserver, postgresql, the database type you submitted:"
 	ErrorsDialectorDbInitFail      string = "gorm dialector initialization failed, dbType:"

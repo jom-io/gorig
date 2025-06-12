@@ -28,12 +28,12 @@ var gormDbMysqlMap = make(map[string]*gorm.DB)
 
 func UseDbConn(dbname string) *gorm.DB {
 	if dbname == "" {
-		logger.Logger.Error(fmt.Sprintf(errc.ErrorsDBInitFail))
+		logger.Logger.Error(fmt.Sprintf(errc.ErrorsDBInitFail, Mysql))
 		return nil
 	}
 	dbname = strings.ToLower(dbname)
 	if _, ok := gormDbMysqlMap[dbname]; !ok {
-		logger.Logger.Error(fmt.Sprintf(errc.ErrorsNotInitGlobalPointer, dbname))
+		logger.Logger.Error(fmt.Sprintf(errc.ErrorsNotInitGlobalPointer, Mysql, dbname))
 		return nil
 	}
 	return gormDbMysqlMap[dbname]
@@ -54,16 +54,16 @@ func (*gormDBService) Start() error {
 }
 
 func (*gormDBService) Migrate(con *Con, tableName string, value ConTable, indexList []Index) error {
-	if con.DB == nil {
+	if con.MysqlDB == nil {
 		return errors.Sys("Migrate: db is nil")
 	}
-	if err := con.Table(tableName).AutoMigrate(value); err != nil {
+	if err := con.MysqlDB.Table(tableName).AutoMigrate(value); err != nil {
 		sys.Error("AutoMigrate error", err)
 		logger.Logger.Fatal("AutoMigrate error", zap.Error(err))
 	}
 	for _, v := range indexList {
 		var count int64
-		con.Raw("SELECT count(1) FROM information_schema.STATISTICS WHERE table_schema = ? AND table_name = ? AND index_name = ?", con.Migrator().CurrentDatabase(), tableName, v.IdxName).Count(&count)
+		con.MysqlDB.Raw("SELECT count(1) FROM information_schema.STATISTICS WHERE table_schema = ? AND table_name = ? AND index_name = ?", con.MysqlDB.Migrator().CurrentDatabase(), tableName, v.IdxName).Count(&count)
 		if count == 0 {
 			sql := "CREATE IDXTYPE% `" + v.IdxName + "` ON `" + tableName + "` ("
 			for _, field := range v.Fields {
@@ -75,7 +75,7 @@ func (*gormDBService) Migrate(con *Con, tableName string, value ConTable, indexL
 			} else {
 				sql = strings.Replace(sql, "IDXTYPE%", " INDEX", -1)
 			}
-			con.Exec(sql)
+			con.MysqlDB.Exec(sql)
 		}
 	}
 
@@ -103,11 +103,11 @@ func initMysqlDB(dbname ...string) {
 }
 
 func (s *gormDBService) GetByID(c *Con, id int64, result interface{}) error {
-	if c.WithContext(c.Ctx) == nil {
+	if c.MysqlDB.WithContext(c.Ctx) == nil {
 		return fmt.Errorf("get db is nil")
 	}
 	//result = make(map[string]interface{})
-	if err := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).First(result).Error; err != nil {
+	if err := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).First(result).Error; err != nil {
 		return err
 	}
 	return nil
@@ -120,21 +120,21 @@ func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...
 		if newID != 0 {
 			c.ID = newID
 		}
-		tx = c.WithContext(c.Ctx).Table(c.TableName()).Create(data)
+		tx = c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Create(data)
 	} else {
 		if version != nil && len(version) > 0 && version[0] > 0 {
-			tx = c.WithContext(c.Ctx).Table(c.TableName()).Where("id", data.GetID()).Updates(data)
+			tx = c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id", data.GetID()).Updates(data)
 		} else {
-			if eg := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Count(&id); eg.Error != nil {
+			if eg := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Count(&id); eg.Error != nil {
 				return 0, eg.Error
 			}
 			if id == 0 {
-				tx = c.WithContext(c.Ctx).Table(c.TableName()).Create(data)
+				tx = c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Create(data)
 			} else {
-				tx = c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Updates(data)
+				tx = c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Updates(data)
 			}
 		}
-		//tx = c.WithContext(c.Ctx).Table(c.TableName()).Save(data)
+		//tx = c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Save(data)
 	}
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -144,14 +144,14 @@ func (s *gormDBService) Save(c *Con, data Identifiable, newID int64, version ...
 
 func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {
 	data["updated_at"] = time.Now()
-	if err := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).Updates(data).Error; err != nil {
+	if err := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).Updates(data).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) error {
-	tx := c.WithContext(c.Ctx).Table(c.TableName())
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	data["updated_at"] = time.Now()
 	if err := tx.Updates(data).Error; err != nil {
@@ -161,14 +161,14 @@ func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string
 }
 
 func (s *gormDBService) Delete(c *Con, data Identifiable) error {
-	if err := c.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Delete(&Options{}).Error; err != nil {
+	if err := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", data.GetID()).Delete(&Options{}).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *gormDBService) DeleteByMatch(c *Con, matchList []Match) error {
-	tx := c.WithContext(c.Ctx).Table(c.TableName())
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	if err := tx.Delete(&Options{}).Error; err != nil {
 		return err
@@ -246,7 +246,7 @@ func sortMysqlCond(sortList Sorts, tx *gorm.DB) {
 }
 
 func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
-	tx := c.WithContext(c.Ctx).Table(c.TableName())
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	if err := tx.Limit(10000).Find(result).Error; err != nil {
@@ -256,7 +256,7 @@ func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{
 }
 
 func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
-	tx := c.WithContext(c.Ctx).Table(c.TableName())
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	if err := tx.First(result).Error; err != nil {
@@ -266,7 +266,7 @@ func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}
 }
 
 func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
-	tx := c.WithContext(c.Ctx).Table(c.TableName()).Where("deleted_at is null")
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("deleted_at is null")
 	matchMysqlCond(matchList, tx)
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {
@@ -276,7 +276,7 @@ func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 }
 
 func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (float64, error) {
-	tx := c.WithContext(c.Ctx).Table(c.TableName())
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	if !Check(field) {
 		return 0, errors.Sys(fmt.Sprintf("field is not valid: %s", field))
 	}
@@ -292,7 +292,7 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 }
 
 func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
-	tx := c.WithContext(c.Ctx).Table(c.TableName())
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	count := int64(0)

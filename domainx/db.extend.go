@@ -16,7 +16,7 @@ func printSql(tag string, gormDB *gorm.DB) {
 }
 
 func (c *Con) BeforeCreate(gormDB *gorm.DB) error {
-	c.DB = gormDB
+	c.MysqlDB = gormDB
 	return nil
 }
 
@@ -26,7 +26,7 @@ func (c *Con) AfterCreate(gormDB *gorm.DB) error {
 }
 
 func (c *Con) BeforeUpdate(gormDB *gorm.DB) error {
-	c.DB = gormDB
+	c.MysqlDB = gormDB
 	return nil
 }
 

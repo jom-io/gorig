@@ -11,8 +11,8 @@ type Con struct {
 	Ctx            context.Context `gorm:"-" bson:"-" json:"-"`
 	ID             int64           `gorm:"primaryKey" bson:"id" json:"id"`
 	ConType        `gorm:"-" bson:"-" json:"-"`
-	*gorm.DB       `gorm:"-" bson:"-" json:"-"`
-	MDB            *qmgo.Client `gorm:"-" bson:"-" json:"-"`
+	MysqlDB        *gorm.DB     `gorm:"-" bson:"-" json:"-"`
+	MongoDB        *qmgo.Client `gorm:"-" bson:"-" json:"-"`
 	DBName         string       `gorm:"-" bson:"-" json:"-"`
 	GTable         string       `gorm:"-" bson:"-" json:"-"`
 	Sort           Sorts        `gorm:"-" bson:"-" json:"-"`
@@ -60,8 +60,8 @@ func (c *Con) TableName() string {
 	if c.GTable != "" {
 		return c.GTable
 	}
-	if c.DB != nil {
-		return c.DB.Statement.Table
+	if c.MysqlDB != nil {
+		return c.MysqlDB.Statement.Table
 	}
 	return ""
 }
@@ -73,11 +73,11 @@ func (c *Con) GetCon() *Con {
 func (c *Con) GetDB() any {
 	switch c.ConType {
 	case Mysql:
-		return c.DB
+		return c.MysqlDB
 	case Mongo:
-		return c.MDB
+		return c.MongoDB
 	default:
-		return c.DB
+		return c.MysqlDB
 	}
 }
 
