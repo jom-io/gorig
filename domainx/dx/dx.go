@@ -57,7 +57,7 @@ type (
 		Find() (domainx.ComplexList[T], *errors.Error)
 		Count() (int64, *errors.Error)
 		Sum(field string) (float64, *errors.Error)
-		Page(page *load.Page) (*load.PageRespT[*domainx.Complex[T]], *errors.Error)
+		Page(page, size int64, lastID ...int64) (*load.PageRespT[*domainx.Complex[T]], *errors.Error)
 	}
 )
 
@@ -309,12 +309,14 @@ func (d *dx[T]) Sum(field string) (float64, *errors.Error) {
 	return sum, nil
 }
 
-func (d *dx[T]) Page(page *load.Page) (*load.PageRespT[*domainx.Complex[T]], *errors.Error) {
-	if page == nil {
-		return nil, errors.Sys("page cannot be nil")
+func (d *dx[T]) Page(page, size int64, lastID ...int64) (*load.PageRespT[*domainx.Complex[T]], *errors.Error) {
+	var lID int64
+	if len(lastID) > 0 {
+		lID = lastID[0]
 	}
+	pageLoad := load.BuildPage(d.ctx, page, size, lID)
 	resp := &load.PageRespT[*domainx.Complex[T]]{Result: &[]*domainx.Complex[T]{}}
-	if err := domainx.FindByPageMatchT(d.complex.Con, *d.matches, page, resp, resp.Result); err != nil {
+	if err := domainx.FindByPageMatchT(d.complex.Con, *d.matches, pageLoad, resp, resp.Result); err != nil {
 		return nil, err
 	}
 	return resp, nil

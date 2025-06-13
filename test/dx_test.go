@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"github.com/jom-io/gorig/apix/load"
 	"github.com/jom-io/gorig/domainx"
 	"github.com/jom-io/gorig/domainx/dx"
 	"github.com/jom-io/gorig/serv"
@@ -127,7 +126,7 @@ func TestTestModel_CRUD(t *testing.T) {
 	})
 
 	t.Run("Page", func(t *testing.T) {
-		pageResp, err := dx.On[TestModel](ctx).Page(load.BuildPage(ctx, 1, 2, 0))
+		pageResp, err := dx.On[TestModel](ctx).Page(1, 2, 0)
 		if err != nil {
 			t.Fatalf("Failed to page models: %v", err)
 		}
