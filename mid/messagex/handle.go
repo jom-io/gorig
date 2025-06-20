@@ -18,7 +18,7 @@ func HandlePanic(msg *Message) {
 		}
 		debug.PrintStack()
 		log := fmt.Sprintf("Message execution crash: %s,\nPanic: %v, \ntopic: %s, \ncontent: %v, \nStack: %s", r, msg.Topic, msg.Content, string(debug.Stack()))
-		logger.DPanic(msg.ToNewGinCtx(), log)
+		logger.DPanic(msg.Ctx, log)
 		go dingding.PanicNotifyDefault(log)
 	}
 }
@@ -36,11 +36,11 @@ func HandleError(msg *Message, error *errors.Error) {
 	errText := fmt.Sprintf("Message execution exception: \nError: %v, \ntopic: %s, \ncontent: %v", error, msg.Topic, msg.Content)
 	if error.Type == errors.System {
 		log := fmt.Sprintf("%s, \nStack: %s", errText, string(debug.Stack()))
-		logger.Error(msg.ToNewGinCtx(), error.Error())
+		logger.Error(msg.Ctx, error.Error())
 		go dingding.ErrNotifyDefault(log)
 		return
 	}
 	if error.Type == errors.Application {
-		logger.Error(msg.ToNewGinCtx(), errText)
+		logger.Error(msg.Ctx, errText)
 	}
 }

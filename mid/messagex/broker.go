@@ -1,35 +1,31 @@
 package messagex
 
 import (
+	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/rs/xid"
-	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 )
 
-// MessageType 定义了消息的内容。
 type MessageType string
 
-// Message 是消息的结构体。
 type Message struct {
+	Ctx     context.Context `json:"-"`
 	ID      string
 	GroupID string
 	SubID   uint64
-	Topic   string // 主题
+	Topic   string
 	Content map[string]interface{}
 }
 
-// BrokerType 定义了代理的类型。
 type BrokerType int
 
 const (
-	Local    = iota // 本地通道
-	RabbitMQ        // RabbitMQ 消息代理
+	Local    = iota
+	RabbitMQ // RabbitMQ
+	Redis    // Redis
 )
 
 // MessageBroker 定义了消息代理的行为。
@@ -40,9 +36,6 @@ type MessageBroker interface {
 	Publish(topic string, message *Message) *errors.Error
 	PublishGroup(topic string, groupID string, message *Message) *errors.Error // 指定groupID
 	TopicList() []string
-	//StartListening()
-	//StopListening()
-	//Startup(topic string) *errors.Error
 }
 
 func (m *Message) GetValue(key string) interface{} {
@@ -99,27 +92,23 @@ func (m *Message) SetValue(key string, value interface{}) {
 	m.Content[key] = value
 }
 
-// DeepCopy 创建Message的深拷贝
 func (m *Message) DeepCopy() *Message {
 	if m == nil {
 		return nil
 	}
 
-	// 创建一个新的Message实例
 	clone := &Message{
 		ID:      xid.New().String(),
 		GroupID: m.GroupID,
 		SubID:   m.SubID,
 		Topic:   m.Topic,
-		Content: nil, // 初始化为nil，稍后填充
+		Content: nil,
 	}
 
-	// 深拷贝Content
+	// Deep copy Content map
 	if m.Content != nil {
 		clone.Content = make(map[string]interface{}, len(m.Content))
 		for key, value := range m.Content {
-			// 注意：这里我们假设Content中的值都是基本类型或者类型提供了正确的深拷贝方法
-			// 如果map中包含复杂类型或指针，需要更复杂的处理
 			clone.Content[key] = value
 		}
 	}
@@ -137,12 +126,4 @@ func (m *Message) LowerContentKey() {
 			}
 		}
 	}
-}
-
-func (m *Message) ToNewGinCtx() *gin.Context {
-	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-	ctx.Set(consts.TraceIDKey, m.GroupID)
-	ctx.Header(consts.TraceIDKey, m.GroupID)
-	ctx.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
-	return ctx
 }

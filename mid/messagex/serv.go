@@ -21,25 +21,28 @@ var GService MessageService
 
 func GetDef() *MessageService {
 	if GService.Broker == nil {
-		GService = *Get(Local)
+		GService = *get(Local)
 	}
 	return &GService
 }
 
-func GetInstance(brokerType BrokerType) *MessageService {
+func Ins(brokerType BrokerType) *MessageService {
 	if GService.Broker == nil {
-		GService = *Get(brokerType)
+		GService = *get(brokerType)
 	}
 	return &GService
 }
 
-func Get(brokerType BrokerType) *MessageService {
+func get(brokerType BrokerType) *MessageService {
 	var broker MessageBroker
 	switch brokerType {
 	case Local:
 		broker = NewSimple()
 	case RabbitMQ:
-		// broker = NewRabbitMQMessageBroker()
+	// broker = NewRabbitMQMessageBroker()
+	case Redis:
+		broker = NewSimpleByType(Redis)
+
 	default:
 		panic("Unsupported broker type")
 	}
@@ -48,10 +51,6 @@ func Get(brokerType BrokerType) *MessageService {
 		Broker:     broker,
 	}
 }
-
-//func (s *MessageService) StartListening() {
-//	s.Broker.StartListening()
-//}
 
 func getTopicStr(topic any) string {
 	if _, ok := topic.(string); !ok {
@@ -67,8 +66,16 @@ func getTopicStr(topic any) string {
 }
 
 func RegisterTopic(topic any, handler func(message *Message) *errors.Error) (uint64, *errors.Error) {
+	return Ins(Local).RegisterTopic(topic, handler)
+}
+
+func UnSubscribe(topic any, subID uint64) *errors.Error {
+	return Ins(Local).UnRegisterTopic(topic, subID)
+}
+
+func (s *MessageService) RegisterTopic(topic any, handler func(message *Message) *errors.Error) (uint64, *errors.Error) {
 	topicStr := getTopicStr(topic)
-	subId, e := GetDef().Broker.Subscribe(topicStr, handler)
+	subId, e := Ins(s.BrokerType).Broker.Subscribe(topicStr, handler)
 	sys.Info(" # Reg Topic: ", topic, " # SubID: ", subId)
 	if e != nil {
 		logger.Error(nil, "Registering topic failed", zap.String("topic", topicStr), zap.Error(e))
@@ -76,33 +83,32 @@ func RegisterTopic(topic any, handler func(message *Message) *errors.Error) (uin
 	return subId, e
 }
 
-func UnSubscribe(topic any, subID uint64) *errors.Error {
-	sys.Info(" # UnReg Topic: ", topic, " # SubID: ", subID)
+func (s *MessageService) UnRegisterTopic(topic any, subID uint64) *errors.Error {
 	topicStr := getTopicStr(topic)
-	return GetDef().Broker.UnSubscribe(topicStr, subID)
+	sys.Info(" # UnReg Topic: ", topic, " # SubID: ", subID)
+	return Ins(s.BrokerType).Broker.UnSubscribe(topicStr, subID)
 }
 
-func Publish(topic any, message *Message) (error *errors.Error) {
+func (s *MessageService) Publish(ctx context.Context, topic any, message *Message) (error *errors.Error) {
 	if message == nil {
 		message = new(Message)
 	}
 	if topic != MsgStartup && topic != "" {
 		sys.Info(" # Publish Topic: ", topic)
-		logger.Info(message.ToNewGinCtx(), "Publishing message", zap.String("group_id", message.GroupID), zap.String("topic", topic.(string)), zap.Any("content", message.Content))
+		logger.Info(ctx, "Publishing message", zap.String("group_id", message.GroupID), zap.String("topic", topic.(string)), zap.Any("content", message.Content))
 	}
-	error = GetDef().Broker.Publish(getTopicStr(topic), message)
+
+	error = Ins(s.BrokerType).Broker.Publish(getTopicStr(topic), message)
 	if error != nil {
-		logger.Error(message.ToNewGinCtx(), "Publishing message failed", zap.String("topic", topic.(string)), zap.Error(error))
+		logger.Error(ctx, "Publishing message failed", zap.String("topic", topic.(string)), zap.Error(error))
 	}
 	return
 }
 
-func PublishWithCtx(ctx context.Context, topic any, message *Message) *errors.Error {
-	topicStr := getTopicStr(topic)
-	return Publish(topicStr, message)
-}
-
-func PublishNewMsg[T any](ctx context.Context, topic any, content T, groupId ...string) {
+func (s *MessageService) PublishNewMsg(ctx context.Context, topic any, content any, groupId ...string) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			logger.DPanic(ctx, "PublishNewMsg panic", zap.Any("recover", r))
@@ -122,36 +128,35 @@ func PublishNewMsg[T any](ctx context.Context, topic any, content T, groupId ...
 		}
 	}
 	msg := &Message{
+		Ctx:     ctx,
 		ID:      xid.New().String(),
 		GroupID: gid,
 		Topic:   topicStr,
 		Content: ToMap(content),
 	}
 	msg.LowerContentKey()
-	Publish(msg.Topic, msg)
+	Publish(msg.Topic, msg, s.BrokerType)
+}
+
+func Publish(topic any, message *Message, brokerType ...BrokerType) (error *errors.Error) {
+	if len(brokerType) == 0 {
+		brokerType = []BrokerType{Local}
+	}
+	return Ins(brokerType[0]).Publish(message.Ctx, topic, message)
+}
+
+func PublishWithCtx(ctx context.Context, topic any, message *Message) *errors.Error {
+	topicStr := getTopicStr(topic)
+	return Publish(topicStr, message)
+}
+
+func PublishNewMsg[T any](ctx context.Context, topic any, content T, groupId ...string) {
+	Ins(Local).PublishNewMsg(ctx, topic, content, groupId...)
 }
 
 const (
 	MsgStartup = "messagex.startup"
 )
-
-//func Startup(port string) error {
-//	for _, topic := range GService.Broker.TopicList() {
-//		sys.Info(" # Listening Topic: ", topic)
-//	}
-//	GetDef().Broker.StartListening()
-//	return nil
-//}
-//
-//func Shutdown(context context.Context) error {
-//	GetDef().Broker.StopListening()
-//	return nil
-//}
-//
-//func StartupTopic(topic string) *errors.Error {
-//	sys.Info(" # Listening Topic: ", topic)
-//	return GetDef().Broker.Startup(topic)
-//}
 
 // ToMap converts a struct to a map[string]interface{} where the keys are the struct's field names
 // and the values are the respective field values.
