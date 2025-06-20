@@ -32,13 +32,14 @@ func HandleError(ctx *gin.Context, code int, data *interface{}, error *errors.Er
 	if error == nil {
 		return
 	}
-	logger.Error(ctx, error.Error())
 	if error.Type == errors.System {
+		logger.Warn(ctx, error.Error())
 		response.ErrorSystem(ctx, GetTraceID(ctx), GetTraceID(ctx))
 		log := fmt.Sprintf("TraceID: %s, \nError: %v, \nRequest: %v,  \nStack: %s", GetTraceID(ctx), error, ctx.Request, string(debug.Stack()))
 		go dingding.ErrNotifyDefault(log)
 	}
 	if error.Type == errors.Application {
+		logger.Error(ctx, error.Error())
 		response.Fail(ctx, code, error.Message, data)
 	}
 }

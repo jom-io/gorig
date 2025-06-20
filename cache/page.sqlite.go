@@ -29,12 +29,15 @@ var (
 )
 
 var granularityFormats = map[Granularity]string{
-	GranularityMinute: "%Y-%m-%d %H:%M",
-	GranularityHour:   "%Y-%m-%d %H",
-	GranularityDay:    "%Y-%m-%d",
-	GranularityWeek:   "%Y-%W",
-	GranularityMonth:  "%Y-%m",
-	GranularityYear:   "%Y",
+	GranularityMinute:    "%Y-%m-%d %H:%M",
+	GranularityHour:      "%Y-%m-%d %H",
+	GranularityDay:       "%Y-%m-%d",
+	GranularityWeek:      "%Y-%W",
+	GranularityMonth:     "%Y-%m",
+	GranularityYear:      "%Y",
+	Granularity5Minutes:  "%Y-%m-%d %H:%M",
+	Granularity10Minutes: "%Y-%m-%d %H:%M",
+	Granularity30Minutes: "%Y-%m-%d %H:%M",
 }
 
 // NewSQLiteCachePage Create a new SQLite cache page with the given name.
@@ -279,6 +282,7 @@ func (c *SQLiteCachePage[T]) GroupByTime(
 	conditions map[string]any,
 	from, to time.Time,
 	granularity Granularity,
+	agg Agg,
 	fields ...string,
 ) ([]*PageTimeItem, error) {
 	c.mu.RLock()
@@ -313,19 +317,30 @@ func (c *SQLiteCachePage[T]) GroupByTime(
 	}
 	orderBy := "ORDER BY ct ASC"
 
-	avgFields := make([]string, 0, len(fields))
-	avgFieldNames := make([]string, len(fields))
+	aggFields := make([]string, 0, len(fields))
+	aggFieldNames := make([]string, len(fields))
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("at least one field must be specified for aggregation")
 	}
 	for i, field := range fields {
-		alias := fmt.Sprintf("avg_%s", field)
-		avgFields = append(avgFields, fmt.Sprintf("AVG(CAST(json_extract(data, '$.%s') AS REAL)) as %s", field, alias))
-		avgFieldNames[i] = field
+		alias := fmt.Sprintf("agg_%s", field)
+		aggFields = append(aggFields, fmt.Sprintf("%s(CAST(json_extract(data, '$.%s') AS REAL)) as %s", agg, field, alias))
+		aggFieldNames[i] = field
 	}
 
-	avgFieldsStr := strings.Join(avgFields, ", ")
-	query := fmt.Sprintf(`SELECT strftime('%s', ct) as grp, %s FROM %s %s GROUP BY grp %s`, timeFormat, avgFieldsStr, c.table, where, orderBy)
+	timeFmt := fmt.Sprintf("strftime('%s', ct)", timeFormat)
+	if granularity == Granularity5Minutes {
+		timeFmt = fmt.Sprintf("strftime('%s', ct/300) * 300", timeFormat)
+	}
+	if granularity == Granularity10Minutes {
+		timeFmt = fmt.Sprintf("strftime('%s', ct/600) * 600", timeFormat)
+	}
+	if granularity == Granularity30Minutes {
+		timeFmt = fmt.Sprintf("strftime('%s', ct/1800) * 1800", timeFormat)
+	}
+
+	aggFieldsStr := strings.Join(aggFields, ", ")
+	query := fmt.Sprintf(`SELECT %s as grp, %s FROM %s %s GROUP BY grp %s`, timeFmt, aggFieldsStr, c.table, where, orderBy)
 
 	rows, err := c.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -367,9 +382,9 @@ func (c *SQLiteCachePage[T]) GroupByTime(
 
 		for i, avgVal := range avgVals {
 			if avgVal.Valid {
-				item.Value[avgFieldNames[i]] = decimal.Round(avgVal.Float64, 4)
+				item.Value[aggFieldNames[i]] = decimal.Round(avgVal.Float64, 4)
 			} else {
-				item.Value[avgFieldNames[i]] = 0
+				item.Value[aggFieldNames[i]] = 0
 			}
 		}
 
@@ -490,6 +505,12 @@ func parseGroupTime(granularity Granularity, grp string) (time.Time, error) {
 	switch granularity {
 	case GranularityMinute:
 		return time.ParseInLocation("2006-01-02 15:04", grp, time.UTC)
+	case Granularity5Minutes:
+		return time.ParseInLocation("2006-01-02 15:04", grp, time.UTC)
+	case Granularity10Minutes:
+		return time.ParseInLocation("2006-01-02 15:04", grp, time.UTC)
+	case Granularity30Minutes:
+		return time.ParseInLocation("2006-01-02 15:04", grp, time.UTC)
 	case GranularityHour:
 		return time.ParseInLocation("2006-01-02 15", grp, time.UTC)
 	case GranularityDay:
@@ -499,7 +520,6 @@ func parseGroupTime(granularity Granularity, grp string) (time.Time, error) {
 	case GranularityYear:
 		return time.ParseInLocation("2006", grp, time.UTC)
 	case GranularityWeek:
-		// 格式为 "2025-22"，表示2025年第22周
 		parts := strings.Split(grp, "-")
 		if len(parts) != 2 {
 			return time.Time{}, fmt.Errorf("invalid week format: %s", grp)

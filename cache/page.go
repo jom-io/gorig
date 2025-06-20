@@ -16,18 +16,32 @@ type Pager[T any] interface {
 	Count(conditions map[string]any) (int64, error)
 	Update(conditions map[string]any, value *T) error
 	Delete(conditions map[string]any) error
-	GroupByTime(conditions map[string]any, from, to time.Time, granularity Granularity, fields ...string) ([]*PageTimeItem, error)
+	GroupByTime(conditions map[string]any, from, to time.Time, granularity Granularity, agg Agg, fields ...string) ([]*PageTimeItem, error)
 }
 
 type Granularity string
 
 const (
-	GranularityMinute Granularity = "minute"
-	GranularityHour   Granularity = "hour"
-	GranularityDay    Granularity = "day"
-	GranularityWeek   Granularity = "week"
-	GranularityMonth  Granularity = "month"
-	GranularityYear   Granularity = "year"
+	GranularityMinute    Granularity = "minute"
+	GranularityHour      Granularity = "hour"
+	GranularityDay       Granularity = "day"
+	GranularityWeek      Granularity = "week"
+	GranularityMonth     Granularity = "month"
+	GranularityYear      Granularity = "year"
+	Granularity5Minutes  Granularity = "5minutes"
+	Granularity10Minutes Granularity = "10minutes"
+	Granularity30Minutes Granularity = "30minutes"
+)
+
+type Agg string
+
+const (
+	AggSum   Agg = "sum"
+	AggAvg   Agg = "avg"
+	AggMax   Agg = "max"
+	AggMin   Agg = "min"
+	AggCount Agg = "count"
+	AggTotal Agg = "total"
 )
 
 type PageSorter struct {

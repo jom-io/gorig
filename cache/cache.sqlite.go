@@ -126,12 +126,30 @@ func (c *SQLiteCache[T]) Get(key string) (T, error) {
 	return zero, err
 }
 
+func (c *SQLiteCache[T]) cleanup() {
+	if c == nil {
+		return
+	}
+	go func() {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+		defer cancel()
+		now := time.Now().Unix()
+		_, err := c.db.Exec("DELETE FROM cache WHERE expiration > 0 AND expiration < ?", now)
+		if err != nil {
+			fmt.Printf("Error cleaning up expired cache entries: %v\n", err)
+		}
+	}()
+}
+
 func (c *SQLiteCache[T]) Set(key string, value T, expiration time.Duration) error {
 	if c == nil {
 		return errors.New("cache not initialized")
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	defer c.cleanup()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
@@ -153,6 +171,7 @@ func (c *SQLiteCache[T]) Del(key string) error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	defer c.cleanup()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
@@ -189,6 +208,7 @@ func (c *SQLiteCache[T]) Incr(key string) (int64, error) {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	defer c.cleanup()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
@@ -222,6 +242,7 @@ func (c *SQLiteCache[T]) Expire(key string, expiration time.Duration) error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	defer c.cleanup()
 	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
