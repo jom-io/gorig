@@ -28,9 +28,9 @@ const (
 	GranularityWeek      Granularity = "week"
 	GranularityMonth     Granularity = "month"
 	GranularityYear      Granularity = "year"
-	Granularity5Minutes  Granularity = "5minutes"
-	Granularity10Minutes Granularity = "10minutes"
-	Granularity30Minutes Granularity = "30minutes"
+	Granularity5Minutes  Granularity = "5m"
+	Granularity10Minutes Granularity = "10m"
+	Granularity30Minutes Granularity = "30m"
 )
 
 type Agg string
