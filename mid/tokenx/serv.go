@@ -1,6 +1,7 @@
 package tokenx
 
 import (
+	"context"
 	"github.com/jom-io/gorig/global/variable"
 	"github.com/jom-io/gorig/utils/errors"
 )
@@ -29,7 +30,7 @@ type TokenGenerator interface {
 
 type TokenManager interface {
 	Record(userToken string, userInfo map[string]interface{}) bool
-	GenerateAndRecord(userId string, userInfo map[string]interface{}, expireAt int64) (tokens string, err *errors.Error)
+	GenerateAndRecord(ctx context.Context, userId string, userInfo map[string]interface{}, expireAt int64) (tokens string, err *errors.Error)
 	IsNotExpired(token string, allowSec int64) (*CustomClaims, int)
 	IsMeetRefresh(token string) bool
 	Refresh(oldToken, newToken string) bool

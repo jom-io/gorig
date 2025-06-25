@@ -19,6 +19,10 @@ func sseHandler(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	err = ssex.SendError(c, "test", "This is a test error message")
+	if err != nil {
+		return
+	}
 }
 
 func TestSSEMiddleware_AllowsGET(t *testing.T) {
@@ -64,7 +68,7 @@ func TestSSEMiddleware_RejectsNonGET(t *testing.T) {
 		t.Errorf("expected status 405, got %d", w.Code)
 	}
 
-	expected := `{"status":"error","message":"Only GET method is allowed"}`
+	expected := `{"message":"Only GET method is allowed","status":"error"}`
 	if strings.TrimSpace(w.Body.String()) != expected {
 		t.Errorf("unexpected body: %s", w.Body.String())
 	}

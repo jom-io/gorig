@@ -36,6 +36,8 @@ func Mid() gin.HandlerFunc {
 		header.Set("Access-Control-Allow-Origin", "*")
 
 		c.Writer.Flush()
+
+		c.Next()
 	}
 }
 

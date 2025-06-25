@@ -1,6 +1,7 @@
 package tokenx
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/jom-io/gorig/global/consts"
@@ -215,8 +216,8 @@ func getUserType(userInfo map[string]interface{}) string {
 	return userType
 }
 
-func (u *memoryImpl) GenerateAndRecord(userId string, userInfo map[string]interface{}, expireAt int64) (token string, err *errors.Error) {
-	logger.Info(nil, fmt.Sprintf("GenerateAndRecord userId:%s userInfo:%v expireAt:%d", userId, userInfo, expireAt))
+func (u *memoryImpl) GenerateAndRecord(ctx context.Context, userId string, userInfo map[string]interface{}, expireAt int64) (token string, err *errors.Error) {
+	logger.Info(ctx, fmt.Sprintf("GenerateAndRecord userId:%s userInfo:%v expireAt:%d", userId, userInfo, expireAt))
 	if expireAt < time.Now().Unix() {
 		expireAt = time.Now().Unix() + int64(configure.GetInt("Jwt.TokenExpireAt", defExpire))
 	}
