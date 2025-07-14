@@ -76,7 +76,7 @@ func UnSubscribe(topic any, subID uint64) *errors.Error {
 func (s *MessageService) RegisterTopic(topic any, handler func(message *Message) *errors.Error) (uint64, *errors.Error) {
 	topicStr := getTopicStr(topic)
 	subId, e := Ins(s.BrokerType).Broker.Subscribe(topicStr, handler)
-	sys.Info(" # Reg Topic: ", topic, " # SubID: ", subId)
+	sys.Info(" # Reg Topic: ", topic, " # SubID: ", subId, " # BrokerType: ", s.BrokerType)
 	if e != nil {
 		logger.Error(nil, "Registering topic failed", zap.String("topic", topicStr), zap.Error(e))
 	}
@@ -85,7 +85,7 @@ func (s *MessageService) RegisterTopic(topic any, handler func(message *Message)
 
 func (s *MessageService) UnRegisterTopic(topic any, subID uint64) *errors.Error {
 	topicStr := getTopicStr(topic)
-	sys.Info(" # UnReg Topic: ", topic, " # SubID: ", subID)
+	sys.Info(" # UnReg Topic: ", topic, " # SubID: ", subID, " # BrokerType: ", s.BrokerType)
 	return Ins(s.BrokerType).Broker.UnSubscribe(topicStr, subID)
 }
 
