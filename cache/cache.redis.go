@@ -26,7 +26,7 @@ func GetRedisInstance[T any](r ...*RedisCache[T]) *RedisCache[T] {
 	initMu.Lock()
 	defer initMu.Unlock()
 	if RedisInstance == nil {
-		initRedisCache()
+		RedisInstance = initRedisCache()
 	}
 	if len(r) > 0 {
 		r[0] = (*RedisCache[T])(RedisInstance)
@@ -34,14 +34,14 @@ func GetRedisInstance[T any](r ...*RedisCache[T]) *RedisCache[T] {
 	return (*RedisCache[T])(RedisInstance)
 }
 
-func initRedisCache() {
+func initRedisCache() *RedisCache[any] {
 	RedisInstance = nil
 	addr := configure.GetString("redis.addr")
 	password := configure.GetString("redis.password")
 	db := configure.GetString("redis.db")
 	if addr == "" {
-		//sys.Info("# Redis addr is empty, skipping initialization")
-		return
+		sys.Info("# Redis addr is empty, skipping initialization")
+		return nil
 	}
 
 	cache, err := NewRedisCache[any](RedisConfig{
@@ -51,10 +51,15 @@ func initRedisCache() {
 	})
 	if err != nil {
 		sys.Error("# failed to init Redis cache: ", err)
-		return
+		return nil
 	}
-	RedisInstance = cache
+	if cache == nil {
+		sys.Error("# Redis cache is nil after initialization")
+		return nil
+	}
 	sys.Info("# Redis cache initialized")
+	return cache
+
 }
 
 // RedisConfig holds the Redis configuration parameters

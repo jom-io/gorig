@@ -17,20 +17,12 @@ type MessageService struct {
 	Broker     MessageBroker
 }
 
-var GService MessageService
-
 func GetDef() *MessageService {
-	if GService.Broker == nil {
-		GService = *get(Local)
-	}
-	return &GService
+	return get(Local)
 }
 
 func Ins(brokerType BrokerType) *MessageService {
-	if GService.Broker == nil {
-		GService = *get(brokerType)
-	}
-	return &GService
+	return get(brokerType)
 }
 
 func get(brokerType BrokerType) *MessageService {

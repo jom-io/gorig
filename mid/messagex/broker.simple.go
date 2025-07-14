@@ -45,10 +45,10 @@ func NewSimpleByType(brokerType BrokerType) *SimpleMessageBroker {
 	return &SimpleMessageBroker{}
 }
 
-func (mb *SimpleMessageBroker) StartStoreListener(topic string) {
+func (mb *SimpleMessageBroker) StartStoreListener(topic string) *errors.Error {
 	if mb.store == nil {
 		logger.Error(nil, "store is not initialized, cannot start listener", zap.String("topic", topic))
-		return
+		return errors.Sys("store is not initialized")
 	}
 	onceVal, _ := mb.topicOnce.LoadOrStore(topic, new(sync.Once))
 	once := onceVal.(*sync.Once)
@@ -73,6 +73,8 @@ func (mb *SimpleMessageBroker) StartStoreListener(topic string) {
 			}
 		}()
 	})
+
+	return nil
 }
 
 func (mb *SimpleMessageBroker) Subscribe(topic string, handler func(message *Message) *errors.Error) (uint64, *errors.Error) {
@@ -83,7 +85,9 @@ func (mb *SimpleMessageBroker) SubscribeGroup(topic string, groupID string, hand
 	mb.topicLock.Lock()
 	defer mb.topicLock.Unlock()
 
-	mb.StartStoreListener(topic)
+	if err := mb.StartStoreListener(topic); err != nil {
+		return 0, err
+	}
 	newID := atomic.AddUint64(&mb.nextID, 1)
 	sub := &subscription{
 		id:      newID,
