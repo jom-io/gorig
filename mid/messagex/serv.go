@@ -17,6 +17,8 @@ type MessageService struct {
 	Broker     MessageBroker
 }
 
+var brokerTypeMap = map[BrokerType]MessageBroker{}
+
 func GetDef() *MessageService {
 	return get(Local)
 }
@@ -27,17 +29,23 @@ func Ins(brokerType BrokerType) *MessageService {
 
 func get(brokerType BrokerType) *MessageService {
 	var broker MessageBroker
-	switch brokerType {
-	case Local:
-		broker = NewSimple()
-	case RabbitMQ:
-	// broker = NewRabbitMQMessageBroker()
-	case Redis:
-		broker = NewSimpleByType(Redis)
 
-	default:
-		panic("Unsupported broker type")
+	if brokerTypeMap[brokerType] != nil {
+		broker = brokerTypeMap[brokerType]
+	} else {
+		switch brokerType {
+		case Local:
+			broker = NewSimple()
+		case RabbitMQ:
+		// broker = NewRabbitMQMessageBroker()
+		case Redis:
+			broker = NewSimpleByType(Redis)
+		default:
+			panic("Unsupported broker type")
+		}
+		brokerTypeMap[brokerType] = broker
 	}
+
 	return &MessageService{
 		BrokerType: brokerType,
 		Broker:     broker,
