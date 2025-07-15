@@ -24,6 +24,7 @@ type store[T any] interface {
 }
 
 type SimpleMessageBroker struct {
+	brokerType  BrokerType
 	subscribers sync.Map
 	store       store[*Message]
 	nextID      uint64
@@ -37,12 +38,13 @@ func NewSimple() *SimpleMessageBroker {
 }
 
 func NewSimpleByType(brokerType BrokerType) *SimpleMessageBroker {
-	if brokerType == Redis {
-		return &SimpleMessageBroker{
-			store: cache.GetRedisInstance[*Message](),
-		}
+	simpleBroker := &SimpleMessageBroker{
+		brokerType: brokerType,
 	}
-	return &SimpleMessageBroker{}
+	if brokerType == Redis {
+		simpleBroker.store = cache.GetRedisInstance[*Message]()
+	}
+	return simpleBroker
 }
 
 func (mb *SimpleMessageBroker) StartStoreListener(topic string) {
@@ -83,7 +85,9 @@ func (mb *SimpleMessageBroker) SubscribeGroup(topic string, groupID string, hand
 	mb.topicLock.Lock()
 	defer mb.topicLock.Unlock()
 
-	mb.StartStoreListener(topic)
+	if mb.brokerType == Redis {
+		mb.StartStoreListener(topic)
+	}
 
 	newID := atomic.AddUint64(&mb.nextID, 1)
 	sub := &subscription{
