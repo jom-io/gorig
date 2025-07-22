@@ -294,6 +294,20 @@ func CountByMatch(c *Con, matchList []Match) (int64, *errors.Error) {
 	return count, nil
 }
 
+func ExistsByMatch(c *Con, matchList []Match) (bool, *errors.Error) {
+	if c == nil {
+		return false, errors.Sys("con not init")
+	}
+
+	dbService := GetDBService(c.GetConType())
+
+	exists, gErr := dbService.ExistsByMatch(c, matchList)
+	if gErr != nil {
+		return false, c.HandleWithErr(gErr)
+	}
+	return exists, nil
+}
+
 // SumByMatch queries the sum by condition
 func SumByMatch(c *Con, matchList []Match, field string) (float64, *errors.Error) {
 	if c == nil {

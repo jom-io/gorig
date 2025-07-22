@@ -56,6 +56,7 @@ type (
 		Get() (*domainx.Complex[T], *errors.Error)
 		Find() (domainx.ComplexList[T], *errors.Error)
 		Count() (int64, *errors.Error)
+		Exists() (bool, *errors.Error)
 		Sum(field string) (float64, *errors.Error)
 		Page(page, size int64, lastID ...int64) (*load.PageRespT[*domainx.Complex[T]], *errors.Error)
 	}
@@ -296,6 +297,17 @@ func (d *dx[T]) Count() (int64, *errors.Error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (d *dx[T]) Exists() (bool, *errors.Error) {
+	if err := d.checkMatches(); err != nil {
+		return false, err
+	}
+	exists, err := domainx.ExistsByMatch(d.complex.Con, *d.matches)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func (d *dx[T]) Sum(field string) (float64, *errors.Error) {

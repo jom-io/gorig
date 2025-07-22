@@ -2,6 +2,7 @@ package domainx
 
 import (
 	"context"
+	checkErr "errors"
 	"fmt"
 	"github.com/jom-io/gorig/apix/load"
 	"github.com/jom-io/gorig/global/errc"
@@ -487,6 +488,27 @@ func (s *mongoDBService) CountByMatch(c *Con, matchList []Match) (int64, error) 
 		}
 		return count, nil
 	}
+}
+
+func (s *mongoDBService) ExistsByMatch(c *Con, matchList []Match) (bool, error) {
+	condition := matchMongoCond(matchList)
+	coll, err := getColl(c)
+	if err != nil {
+		return false, err
+	}
+
+	var result bson.M
+	e := coll.Find(c.Ctx, mapToBsonM(condition)).
+		Select(bson.M{"_id": 1}).
+		Limit(1).
+		One(&result)
+	if e != nil {
+		if checkErr.Is(e, mongo.ErrNoDocuments) || checkErr.Is(e, mongo.ErrNilDocument) {
+			return false, nil
+		}
+		return false, errors.Sys(fmt.Sprintf("ExistsByMatch error: %v", err))
+	}
+	return true, nil
 }
 
 func (s *mongoDBService) SumByMatch(c *Con, matchList []Match, field string) (float64, error) {

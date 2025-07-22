@@ -275,6 +275,16 @@ func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	return count, nil
 }
 
+func (s *gormDBService) ExistsByMatch(c *Con, matchList []Match) (bool, error) {
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
+	matchMysqlCond(matchList, tx)
+	var exists int
+	if err := tx.Select("1").Limit(1).Scan(&exists).Error; err != nil {
+		return false, err
+	}
+	return tx.RowsAffected > 0, nil
+}
+
 func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (float64, error) {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
 	if !Check(field) {
