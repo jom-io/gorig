@@ -53,6 +53,7 @@ type (
 		Update(field string, value any) *errors.Error
 		Updates(data map[string]interface{}) *errors.Error
 		Delete() *errors.Error
+		First() (*domainx.Complex[T], *errors.Error)
 		Get() (*domainx.Complex[T], *errors.Error)
 		Find() (domainx.ComplexList[T], *errors.Error)
 		Count() (int64, *errors.Error)
@@ -261,6 +262,10 @@ func (d *dx[T]) Delete() *errors.Error {
 		return err
 	}
 	return domainx.DeleteByMatch(d.complex.Con, *d.matches)
+}
+
+func (d *dx[T]) First() (*domainx.Complex[T], *errors.Error) {
+	return d.Get()
 }
 
 func (d *dx[T]) Get() (*domainx.Complex[T], *errors.Error) {

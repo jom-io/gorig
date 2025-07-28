@@ -1,8 +1,10 @@
 package messagex
 
 import (
+	"context"
 	"fmt"
 	"github.com/jom-io/gorig/cache"
+	"github.com/jom-io/gorig/global/consts"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
 	"go.uber.org/zap"
@@ -69,6 +71,9 @@ func (mb *SimpleMessageBroker) StartStoreListener(topic string) {
 						logger.Error(nil, "redis BRPop error", zap.String("topic", topic), zap.Error(err))
 						time.Sleep(2 * time.Second) // Retry after a short delay
 						continue
+					}
+					if msg.GroupID != "" {
+						msg.Ctx = context.WithValue(context.Background(), consts.TraceIDKey, msg.GroupID)
 					}
 					mb.publish(topic, "", msg)
 				}
