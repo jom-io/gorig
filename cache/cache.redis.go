@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	"github.com/jom-io/gorig/mid/messagex"
 	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/spf13/cast"
