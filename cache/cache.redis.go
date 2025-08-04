@@ -19,7 +19,7 @@ var (
 	initOnce      = &sync.Once{}
 )
 
-func GetRedisInstance[T any]() *RedisCache[T] {
+func GetRedisInstance[T any](ctx context.Context) *RedisCache[T] {
 	initMu.Lock()
 	defer initMu.Unlock()
 	if redisInstance == nil {
@@ -30,7 +30,7 @@ func GetRedisInstance[T any]() *RedisCache[T] {
 	}
 	return &RedisCache[T]{
 		Client: redisInstance,
-		Ctx:    context.Background(),
+		Ctx:    ctx,
 	}
 }
 
@@ -153,11 +153,11 @@ func (r *RedisCache[T]) RPush(queue string, value T) error {
 	return r.Client.RPush(r.Ctx, queue, b).Err()
 }
 
-func (r *RedisCache[T]) BRPop(timeout time.Duration, queue string) (value T, err error) {
+func (r *RedisCache[T]) BRPopCtx(ctx context.Context, timeout time.Duration, queue string) (value T, err error) {
 	if !r.IsInitialized() {
 		return value, fmt.Errorf("redis client is nil")
 	}
-	result, err := r.Client.BRPop(r.Ctx, timeout, queue).Result()
+	result, err := r.Client.BRPop(ctx, timeout, queue).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return value, ErrCacheMiss
@@ -173,6 +173,10 @@ func (r *RedisCache[T]) BRPop(timeout time.Duration, queue string) (value T, err
 		return value, err
 	}
 	return
+}
+
+func (r *RedisCache[T]) BRPop(timeout time.Duration, queue string) (value T, err error) {
+	return r.BRpopCtx(r.Ctx, timeout, queue)
 }
 
 func (r *RedisCache[T]) Incr(key string) (int64, error) {

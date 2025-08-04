@@ -21,9 +21,8 @@ type subscription struct {
 }
 
 type store[T any] interface {
-	GetCtx() context.Context
 	RPush(topic string, message *Message) error
-	BRPop(timeout time.Duration, queue string) (value T, err error)
+	BRPopCtx(ctx context.Context, timeout time.Duration, queue string) (value T, err error)
 }
 
 type SimpleMessageBroker struct {
@@ -33,7 +32,7 @@ type SimpleMessageBroker struct {
 	nextID      uint64
 	topicOnce   sync.Map
 	topicLock   sync.Mutex
-	stopChan    sync.Map
+	stopCtxs    sync.Map
 }
 
 func NewSimple() *SimpleMessageBroker {
@@ -45,7 +44,7 @@ func NewSimpleByType(brokerType BrokerType) *SimpleMessageBroker {
 		brokerType: brokerType,
 	}
 	if brokerType == Redis {
-		simpleBroker.store = cache.GetRedisInstance[*Message]()
+		simpleBroker.store = cache.GetRedisInstance[*Message](context.Background())
 	}
 	return simpleBroker
 }
@@ -59,17 +58,17 @@ func (mb *SimpleMessageBroker) StartStoreListener(topic string) {
 	once := onceVal.(*sync.Once)
 
 	once.Do(func() {
-		stop := make(chan struct{})
-		mb.stopChan.Store(topic, stop)
+		ctx, cancel := context.WithCancel(context.Background())
+		mb.stopCtxs.Store(topic, cancel)
+
 		go func() {
 			for {
 				select {
-				case <-stop:
+				case <-ctx.Done():
 					logger.Info(nil, "Stopping listener for topic", zap.String("topic", topic))
-					mb.store.GetCtx().Done()
 					return
 				default:
-					msg, err := mb.store.BRPop(0, topic)
+					msg, err := mb.store.BRPopCtx(ctx, 0, topic)
 					if err != nil {
 						logger.Error(nil, "redis BRPop error", zap.String("topic", topic), zap.Error(err))
 						time.Sleep(2 * time.Second) // Retry after a short delay
@@ -131,10 +130,15 @@ func (mb *SimpleMessageBroker) UnSubscribe(topic string, subID uint64) *errors.E
 			if len(subs) == 0 {
 				mb.subscribers.Delete(topic)
 				mb.topicOnce.Delete(topic)
-				if stop, ok := mb.stopChan.Load(topic); ok {
-					close(stop.(chan struct{}))
-					mb.stopChan.Delete(topic)
-				}
+				mb.stopCtxs.Range(func(key, value interface{}) bool {
+					if key == topic {
+						if cancelFunc, ok := value.(context.CancelFunc); ok {
+							cancelFunc() // Cancel the context to stop the listener
+						}
+						mb.stopCtxs.Delete(key)
+					}
+					return true
+				})
 			} else {
 				mb.subscribers.Store(topic, subs)
 			}
@@ -222,9 +226,11 @@ func (mb *SimpleMessageBroker) StopListening() {
 		}
 		mb.subscribers.Delete(key)
 		mb.topicOnce.Delete(key.(string))
-		if stop, ok := mb.stopChan.Load(key); ok {
-			close(stop.(chan struct{}))
-			mb.stopChan.Delete(key)
+		if cancelFunc, ok := mb.stopCtxs.Load(key); ok {
+			if cancelFunc, ok := cancelFunc.(context.CancelFunc); ok {
+				cancelFunc() // Cancel the context to stop the listener
+			}
+			mb.stopCtxs.Delete(key)
 		}
 		return true
 	})

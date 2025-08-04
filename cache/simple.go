@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"time"
 )
@@ -17,7 +18,7 @@ func init() {
 
 	caches = []Cache[any]{l1Cache}
 
-	l2Cache := GetRedisInstance[any]()
+	l2Cache := GetRedisInstance[any](context.Background())
 	if l2Cache != nil {
 		caches = append(caches, l2Cache)
 	}
