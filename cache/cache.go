@@ -46,7 +46,7 @@ func New[T any](t Type, args ...any) Cache[T] {
 		}
 		return NewGoCache[T](defaultExpiration, cleanupInterval)
 	case Redis:
-		return GetRedisInstance[T]()
+		return GetRedisInstance[T](context.Background())
 	case JSON:
 		if len(args) < 1 {
 			args = append(args, filepath.Base(fmt.Sprintf("%T", new(T))))

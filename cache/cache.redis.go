@@ -176,7 +176,7 @@ func (r *RedisCache[T]) BRPopCtx(ctx context.Context, timeout time.Duration, que
 }
 
 func (r *RedisCache[T]) BRPop(timeout time.Duration, queue string) (value T, err error) {
-	return r.BRpopCtx(r.Ctx, timeout, queue)
+	return r.BRPopCtx(r.Ctx, timeout, queue)
 }
 
 func (r *RedisCache[T]) Incr(key string) (int64, error) {
