@@ -47,6 +47,7 @@ func initRedisCache() *redis.Client {
 			Addr:     addr,
 			Password: password,
 			DB:       cast.ToInt(db),
+			PoolSize: 10000,
 		})
 		if err != nil {
 			sys.Error("# failed to init Redis cache: ", err)
@@ -65,6 +66,7 @@ type RedisConfig struct {
 	Addr     string
 	Password string
 	DB       int
+	PoolSize int
 }
 
 type RedisCache[T any] struct {
@@ -81,6 +83,7 @@ func newRedisCache(cfg RedisConfig) (*redis.Client, error) {
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
 		DB:       cfg.DB,
+		PoolSize: cfg.PoolSize,
 	})
 
 	ctx := context.Background()
