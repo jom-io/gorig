@@ -14,55 +14,50 @@ import (
 )
 
 var (
-	RedisInstance *redis.Client
+	redisInstance *redis.Client
 	initMu        sync.Mutex
+	initOnce      = &sync.Once{}
 )
-
-func RestRedisInstance() {
-	initRedisCache()
-}
 
 func GetRedisInstance[T any]() *RedisCache[T] {
 	initMu.Lock()
 	defer initMu.Unlock()
-	if RedisInstance == nil {
-		RedisInstance = initRedisCache()
+	if redisInstance == nil {
+		redisInstance = initRedisCache()
 	}
-	if RedisInstance == nil {
+	if redisInstance == nil {
 		return nil
 	}
 	return &RedisCache[T]{
-		Client: RedisInstance,
+		Client: redisInstance,
 		Ctx:    context.Background(),
 	}
 }
 
 func initRedisCache() *redis.Client {
-	RedisInstance = nil
-	addr := configure.GetString("redis.addr")
-	password := configure.GetString("redis.password")
-	db := configure.GetString("redis.db")
-	if addr == "" {
-		sys.Info("# Redis addr is empty, skipping initialization")
-		return nil
-	}
+	initOnce.Do(func() {
+		addr := configure.GetString("redis.addr")
+		password := configure.GetString("redis.password")
+		db := configure.GetString("redis.db")
+		if addr == "" {
+			sys.Info("# Redis addr is empty, skipping initialization")
+		}
 
-	cache, err := newRedisCache(RedisConfig{
-		Addr:     addr,
-		Password: password,
-		DB:       cast.ToInt(db),
+		cache, err := newRedisCache(RedisConfig{
+			Addr:     addr,
+			Password: password,
+			DB:       cast.ToInt(db),
+		})
+		if err != nil {
+			sys.Error("# failed to init Redis cache: ", err)
+		}
+		if cache == nil {
+			sys.Error("# Redis cache is nil after initialization")
+		}
+		sys.Info("# Redis cache initialized")
+		redisInstance = cache
 	})
-	if err != nil {
-		sys.Error("# failed to init Redis cache: ", err)
-		return nil
-	}
-	if cache == nil {
-		sys.Error("# Redis cache is nil after initialization")
-		return nil
-	}
-	sys.Info("# Redis cache initialized")
-	return cache
-
+	return redisInstance
 }
 
 // RedisConfig holds the Redis configuration parameters
@@ -98,7 +93,7 @@ func (r *RedisCache[T]) IsInitialized() bool {
 
 func (r *RedisCache[T]) Get(key string) (T, error) {
 	var zero T
-	if GetRedisInstance[T]() == nil {
+	if !r.IsInitialized() {
 		return zero, fmt.Errorf("redis client is nil")
 	}
 	val, err := r.Client.Get(r.Ctx, key).Result()
@@ -133,7 +128,7 @@ func (r *RedisCache[T]) Del(key string) error {
 }
 
 func (r *RedisCache[T]) Exists(key string) (bool, error) {
-	if GetRedisInstance[T]() == nil {
+	if !r.IsInitialized() {
 		return false, fmt.Errorf("redis client is nil")
 	}
 	result, err := r.Client.Exists(r.Ctx, key).Result()
@@ -155,7 +150,7 @@ func (r *RedisCache[T]) RPush(queue string, value T) error {
 }
 
 func (r *RedisCache[T]) BRPop(timeout time.Duration, queue string) (value T, err error) {
-	if GetRedisInstance[T]() == nil {
+	if !r.IsInitialized() {
 		return value, fmt.Errorf("redis client is nil")
 	}
 	result, err := r.Client.BRPop(r.Ctx, timeout, queue).Result()
@@ -177,7 +172,7 @@ func (r *RedisCache[T]) BRPop(timeout time.Duration, queue string) (value T, err
 }
 
 func (r *RedisCache[T]) Incr(key string) (int64, error) {
-	if GetRedisInstance[T]() == nil {
+	if !r.IsInitialized() {
 		return 0, fmt.Errorf("redis client is nil")
 	}
 	return r.Client.Incr(r.Ctx, key).Result()
