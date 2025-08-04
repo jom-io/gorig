@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	configure "github.com/jom-io/gorig/utils/cofigure"
+	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/spf13/cast"
 	"sync"
@@ -20,9 +21,11 @@ var (
 )
 
 func GetRedisInstance[T any]() *RedisCache[T] {
+	logger.Info(nil, "Initializing Redis cache instance...")
 	initMu.Lock()
 	defer initMu.Unlock()
 	if redisInstance == nil {
+		logger.Info(nil, "Redis cache instance is not initialized, calling initRedisCache()")
 		redisInstance = initRedisCache()
 	}
 	if redisInstance == nil {
