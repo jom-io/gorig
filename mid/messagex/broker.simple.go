@@ -21,6 +21,7 @@ type subscription struct {
 }
 
 type store[T any] interface {
+	GetCtx() context.Context
 	RPush(topic string, message *Message) error
 	BRPop(timeout time.Duration, queue string) (value T, err error)
 }
@@ -64,6 +65,8 @@ func (mb *SimpleMessageBroker) StartStoreListener(topic string) {
 			for {
 				select {
 				case <-stop:
+					logger.Info(nil, "Stopping listener for topic", zap.String("topic", topic))
+					mb.store.GetCtx().Done()
 					return
 				default:
 					msg, err := mb.store.BRPop(0, topic)

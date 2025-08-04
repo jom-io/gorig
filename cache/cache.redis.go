@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/jom-io/gorig/mid/messagex"
 	configure "github.com/jom-io/gorig/utils/cofigure"
-	"github.com/jom-io/gorig/utils/logger"
 	"github.com/jom-io/gorig/utils/sys"
 	"github.com/spf13/cast"
 	"sync"
@@ -21,11 +21,9 @@ var (
 )
 
 func GetRedisInstance[T any]() *RedisCache[T] {
-	logger.Info(nil, "Initializing Redis cache instance...")
 	initMu.Lock()
 	defer initMu.Unlock()
 	if redisInstance == nil {
-		logger.Info(nil, "Redis cache instance is not initialized, calling initRedisCache()")
 		redisInstance = initRedisCache()
 	}
 	if redisInstance == nil {
@@ -73,6 +71,10 @@ type RedisConfig struct {
 type RedisCache[T any] struct {
 	Client *redis.Client
 	Ctx    context.Context
+}
+
+func (r *RedisCache[T]) GetCtx() context.Context {
+	return r.Ctx
 }
 
 func newRedisCache(cfg RedisConfig) (*redis.Client, error) {
