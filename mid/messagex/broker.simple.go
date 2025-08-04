@@ -182,6 +182,9 @@ func (mb *SimpleMessageBroker) listen(sub *subscription) {
 	for message := range sub.ch {
 		go func(msg *Message) {
 			defer HandlePanic(msg)
+			if msg.Ctx == nil {
+				msg.Ctx = context.Background()
+			}
 			if err := sub.handler(msg); err != nil {
 				HandleError(msg, err)
 				//logger.Error(message.Ctx, "Error processing message", zap.Error(err))
