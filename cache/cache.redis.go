@@ -26,7 +26,7 @@ func GetRedisInstance[T any]() *RedisCache[T] {
 	initMu.Lock()
 	defer initMu.Unlock()
 	if RedisInstance == nil {
-		RedisInstance = initRedisCache[T]()
+		RedisInstance = initRedisCache()
 	}
 	if RedisInstance == nil {
 		return nil
