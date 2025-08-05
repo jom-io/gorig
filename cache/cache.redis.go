@@ -19,6 +19,15 @@ var (
 	initOnce      = &sync.Once{}
 )
 
+func RestRedisInstance() {
+	initMu.Lock()
+	defer initMu.Unlock()
+	if redisInstance != nil {
+		redisInstance.Close()
+		redisInstance = nil
+	}
+}
+
 func GetRedisInstance[T any](ctx context.Context) *RedisCache[T] {
 	initMu.Lock()
 	defer initMu.Unlock()
@@ -35,29 +44,27 @@ func GetRedisInstance[T any](ctx context.Context) *RedisCache[T] {
 }
 
 func initRedisCache() *redis.Client {
-	initOnce.Do(func() {
-		addr := configure.GetString("redis.addr")
-		password := configure.GetString("redis.password")
-		db := configure.GetString("redis.db")
-		if addr == "" {
-			sys.Info("# Redis addr is empty, skipping initialization")
-		}
+	addr := configure.GetString("redis.addr")
+	password := configure.GetString("redis.password")
+	db := configure.GetString("redis.db")
+	if addr == "" {
+		sys.Info("# Redis addr is empty, skipping initialization")
+	}
 
-		cache, err := newRedisCache(RedisConfig{
-			Addr:     addr,
-			Password: password,
-			DB:       cast.ToInt(db),
-			PoolSize: 10000,
-		})
-		if err != nil {
-			sys.Error("# failed to init Redis cache: ", err)
-		}
-		if cache == nil {
-			sys.Error("# Redis cache is nil after initialization")
-		}
-		sys.Info("# Redis cache initialized")
-		redisInstance = cache
+	cache, err := newRedisCache(RedisConfig{
+		Addr:     addr,
+		Password: password,
+		DB:       cast.ToInt(db),
+		PoolSize: 10000,
 	})
+	if err != nil {
+		sys.Error("# failed to init Redis cache: ", err)
+	}
+	if cache == nil {
+		sys.Error("# Redis cache is nil after initialization")
+	}
+	sys.Info("# Redis cache initialized")
+	redisInstance = cache
 	return redisInstance
 }
 
