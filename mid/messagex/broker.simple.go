@@ -155,6 +155,11 @@ func (mb *SimpleMessageBroker) Publish(topic string, message *Message) *errors.E
 
 func (mb *SimpleMessageBroker) publish(topic string, groupID string, message *Message) {
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error(nil, "message publish panic", zap.Any("panic", r), zap.String("topic", topic), zap.Any("message", message))
+			}
+		}()
 		value, ok := mb.subscribers.Load(topic)
 		if !ok {
 			return
