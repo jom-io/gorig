@@ -372,9 +372,15 @@ var mongoKeywords = []string{
 }
 
 func matchMongoCond(matchList []Match) map[string]interface{} {
-	condition := make(map[string]interface{})
+    condition := make(map[string]interface{})
 
-	for _, match := range matchList {
+    for _, match := range matchList {
+        // Normalize array helpers to existing operators to avoid duplications
+        if match.Type == MHas {
+            match.Type = MEq
+        } else if match.Type == MHasAny {
+            match.Type = MIN
+        }
 		if fieldValue, ok := match.Value.(ValueField); ok {
 			if !fieldValue.Check(mongoKeywords...) {
 				continue
@@ -429,6 +435,9 @@ func matchMongoCond(matchList []Match) map[string]interface{} {
 			condMap["$in"] = match.Value
 		case MNOTIN:
 			condMap["$nin"] = match.Value
+        case MHasAll:
+            // 数组包含所有元素
+            condMap["$all"] = match.Value
 		case MNEmpty:
 			condMap["$exists"] = true
 			condMap["$not"] = bson.M{"$size": 0}

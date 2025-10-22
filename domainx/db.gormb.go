@@ -209,6 +209,43 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 		case MNOTIN:
 			tx = tx.Where(match.Field+" not in (?)", match.Value)
 			continue
+		case MHas:
+			tx = tx.Where("JSON_SEARCH("+match.Field+", 'one', ?) IS NOT NULL", match.Value)
+			continue
+		case MHasAny:
+			if vs, ok := match.Value.([]string); ok && len(vs) > 0 {
+				placeholders := strings.Repeat("?,", len(vs))
+				placeholders = placeholders[:len(placeholders)-1]
+				args := make([]interface{}, 0, len(vs))
+				for _, v := range vs {
+					args = append(args, v)
+				}
+				tx = tx.Where("JSON_OVERLAPS("+match.Field+", JSON_ARRAY("+placeholders+"))", args...)
+			} else if vi, ok := match.Value.([]interface{}); ok && len(vi) > 0 {
+				placeholders := strings.Repeat("?,", len(vi))
+				placeholders = placeholders[:len(placeholders)-1]
+				tx = tx.Where("JSON_OVERLAPS("+match.Field+", JSON_ARRAY("+placeholders+"))", vi...)
+			} else {
+				tx = tx.Where("JSON_SEARCH("+match.Field+", 'one', ?) IS NOT NULL", match.Value)
+			}
+			continue
+		case MHasAll:
+			if vs, ok := match.Value.([]string); ok && len(vs) > 0 {
+				placeholders := strings.Repeat("?,", len(vs))
+				placeholders = placeholders[:len(placeholders)-1]
+				args := make([]interface{}, 0, len(vs))
+				for _, v := range vs {
+					args = append(args, v)
+				}
+				tx = tx.Where("JSON_CONTAINS("+match.Field+", JSON_ARRAY("+placeholders+"))", args...)
+			} else if vi, ok := match.Value.([]interface{}); ok && len(vi) > 0 {
+				placeholders := strings.Repeat("?,", len(vi))
+				placeholders = placeholders[:len(placeholders)-1]
+				tx = tx.Where("JSON_CONTAINS("+match.Field+", JSON_ARRAY("+placeholders+"))", vi...)
+			} else {
+				tx = tx.Where("JSON_CONTAINS("+match.Field+", JSON_QUOTE(?))", match.Value)
+			}
+			continue
 		case MNEmpty:
 			tx = tx.Where(match.Field + " != '' and " + match.Field + " is not null")
 			continue

@@ -9,18 +9,22 @@ import (
 type MatchType string
 
 const (
-	MEq     MatchType = "="
-	MLt     MatchType = "<"
-	MLte    MatchType = "<="
-	MGt     MatchType = ">"
-	MGte    MatchType = ">="
-	MNE     MatchType = "!="
-	MLIKE   MatchType = "like"
-	MIN     MatchType = "in"
-	MNOTIN  MatchType = "not in"
-	Near    MatchType = "near"
-	NearLoc MatchType = "nearloc"
-	MNEmpty MatchType = "not empty"
+    MEq     MatchType = "="
+    MLt     MatchType = "<"
+    MLte    MatchType = "<="
+    MGt     MatchType = ">"
+    MGte    MatchType = ">="
+    MNE     MatchType = "!="
+    MLIKE   MatchType = "like"
+    MIN     MatchType = "in"
+    MNOTIN  MatchType = "not in"
+    // Array contains operators
+    MHas      MatchType = "has"      // array contains a single value
+    MHasAny   MatchType = "has_any"  // array contains any of values
+    MHasAll   MatchType = "has_all"  // array contains all values
+    Near    MatchType = "near"
+    NearLoc MatchType = "nearloc"
+    MNEmpty MatchType = "not empty"
 )
 
 func Check(s string) bool {
@@ -151,11 +155,26 @@ func (m *Matches) Ne(field string, value interface{}, ignore ...bool) *Matches {
 }
 
 func (m *Matches) In(field string, value interface{}, ignore ...bool) *Matches {
-	return m.Add(field, value, MIN, ignore...)
+    return m.Add(field, value, MIN, ignore...)
 }
 
 func (m *Matches) NotIn(field string, value interface{}, ignore ...bool) *Matches {
-	return m.Add(field, value, MNOTIN, ignore...)
+    return m.Add(field, value, MNOTIN, ignore...)
+}
+
+// Has checks array field contains a single value
+func (m *Matches) Has(field string, value interface{}, ignore ...bool) *Matches {
+    return m.Add(field, value, MHas, ignore...)
+}
+
+// HasAny checks array field contains any of values
+func (m *Matches) HasAny(field string, value interface{}, ignore ...bool) *Matches {
+    return m.Add(field, value, MHasAny, ignore...)
+}
+
+// HasAll checks array field contains all values
+func (m *Matches) HasAll(field string, value interface{}, ignore ...bool) *Matches {
+    return m.Add(field, value, MHasAll, ignore...)
 }
 
 func (m *Matches) NEmpty(field string) *Matches {

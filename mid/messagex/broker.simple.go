@@ -197,6 +197,9 @@ func (mb *SimpleMessageBroker) listen(sub *subscription) {
 			if msg.Ctx == nil {
 				msg.Ctx = context.Background()
 			}
+			if msg.GroupID != "" {
+				msg.Ctx = context.WithValue(msg.Ctx, consts.TraceIDKey, msg.GroupID)
+			}
 			if err := sub.handler(msg); err != nil {
 				HandleError(msg, err)
 				//logger.Error(message.Ctx, "Error processing message", zap.Error(err))

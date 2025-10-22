@@ -23,8 +23,9 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.12.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	gorm.io/driver/mysql v1.5.4
-	gorm.io/gorm v1.25.7
+	gorm.io/datatypes v1.2.5
+	gorm.io/driver/mysql v1.5.6
+	gorm.io/gorm v1.25.11
 	gorm.io/plugin/dbresolver v1.5.1
 )
 
@@ -48,7 +49,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.19.0 // indirect
-	github.com/go-sql-driver/mysql v1.8.0 // indirect
+	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect

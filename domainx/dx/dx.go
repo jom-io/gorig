@@ -41,6 +41,10 @@ type (
 		Like(field string, value string, ignore ...bool) DQuery[T]
 		In(field string, value interface{}, ignore ...bool) DQuery[T]
 		NotIn(field string, value interface{}, ignore ...bool) DQuery[T]
+		// Array helpers for []T fields (e.g., Tags []string)
+		Has(field string, value interface{}, ignore ...bool) DQuery[T]
+		HasAny(field string, value interface{}, ignore ...bool) DQuery[T]
+		HasAll(field string, value interface{}, ignore ...bool) DQuery[T]
 		NEmpty(field string) DQuery[T]
 		Near(latField, lngField string, lat, lng, distance float64) DQuery[T]
 		NearLoc(localField string, lat, lng, distance float64) DQuery[T]
@@ -169,6 +173,21 @@ func (d *dx[T]) In(field string, value interface{}, ignore ...bool) DQuery[T] {
 
 func (d *dx[T]) NotIn(field string, value interface{}, ignore ...bool) DQuery[T] {
 	d.matches.NotIn(field, value, ignore...)
+	return d
+}
+
+func (d *dx[T]) Has(field string, value interface{}, ignore ...bool) DQuery[T] {
+	d.matches.Has(field, value, ignore...)
+	return d
+}
+
+func (d *dx[T]) HasAny(field string, value interface{}, ignore ...bool) DQuery[T] {
+	d.matches.HasAny(field, value, ignore...)
+	return d
+}
+
+func (d *dx[T]) HasAll(field string, value interface{}, ignore ...bool) DQuery[T] {
+	d.matches.HasAll(field, value, ignore...)
 	return d
 }
 
@@ -305,6 +324,12 @@ func (d *dx[T]) Count() (int64, *errors.Error) {
 }
 
 func (d *dx[T]) Exists() (bool, *errors.Error) {
+	if !d.IsZero() {
+		if err := domainx.GetByID(d.complex.Con, d.GetID().Int64(), d.complex); err != nil {
+			return false, err
+		}
+		return !d.isNil(), nil
+	}
 	if err := d.checkMatches(); err != nil {
 		return false, err
 	}
