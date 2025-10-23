@@ -17,3 +17,13 @@ func (c *Con) GetConType() ConType {
 	}
 	return c.ConType
 }
+
+func (c *Con) GetConStr() string {
+	switch c.GetConType() {
+	case Mysql:
+		return "Mysql"
+	case Mongo:
+		return "mongo"
+	}
+	return ""
+}

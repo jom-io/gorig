@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/jom-io/gorig/apix/load"
+	"github.com/jom-io/gorig/global/variable"
+	configure "github.com/jom-io/gorig/utils/cofigure"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/jom-io/gorig/utils/logger"
 	"strings"
@@ -17,7 +19,8 @@ func UseCon(ctx context.Context, conType ConType, dbName string, table string) *
 	}
 	con.ConType = conType
 	con.DBName = dbName
-	con.GTable = table
+	dbPrefix := configure.GetString(fmt.Sprintf("%s.%s.prefix", conType, dbName), variable.TBPrefix)
+	con.GTable = variable.TBPrefix + dbPrefix + table
 	switch conType {
 	case Mysql:
 		if connDb := UseDbConn(dbName); connDb != nil {

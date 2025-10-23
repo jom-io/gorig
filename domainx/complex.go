@@ -2,7 +2,6 @@ package domainx
 
 import (
 	"context"
-	"github.com/jom-io/gorig/global/variable"
 	"gorm.io/gorm"
 	"time"
 )
@@ -62,8 +61,6 @@ func CreateComplex[T any](ctx context.Context, conType ConType, dbName string, t
 		for i := range prefix {
 			table = prefix[i] + table
 		}
-	} else if variable.TBPrefix != "" {
-		table = variable.TBPrefix + table
 	}
 
 	var newData T
