@@ -19,7 +19,7 @@ func UseCon(ctx context.Context, conType ConType, dbName string, table string) *
 	}
 	con.ConType = conType
 	con.DBName = dbName
-	dbPrefix := configure.GetString(fmt.Sprintf("%s.%s.prefix", conType, dbName), variable.TBPrefix)
+	dbPrefix := configure.GetString(fmt.Sprintf("%s.%s.prefix", con.GetConStr(), dbName), "")
 	con.GTable = variable.TBPrefix + dbPrefix + table
 	switch conType {
 	case Mysql:
