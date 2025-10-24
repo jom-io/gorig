@@ -2,6 +2,7 @@ package domainx
 
 import (
 	"context"
+	"github.com/jom-io/gorig/global/variable"
 	"gorm.io/gorm"
 	"time"
 )
@@ -71,6 +72,10 @@ func CreateComplex[T any](ctx context.Context, conType ConType, dbName string, t
 	c := Complex[T]{Con: UseCon(ctx, conType, dbName, table), Data: &newData}
 	if c.Con == nil {
 		return &c
+	}
+
+	if variable.TBPrefix != "" {
+		c.Con.GTable = variable.TBPrefix + c.Con.GTable
 	}
 
 	c.Con.SaveCreateTime = func() {
