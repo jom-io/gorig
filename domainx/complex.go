@@ -74,7 +74,7 @@ func CreateComplex[T any](ctx context.Context, conType ConType, dbName string, t
 		return &c
 	}
 
-	if variable.TBPrefix != "" {
+	if len(prefix) <= 0 && variable.TBPrefix != "" {
 		c.Con.GTable = variable.TBPrefix + c.Con.GTable
 	}
 
