@@ -2,7 +2,9 @@ package domainx
 
 import (
 	"context"
+	"fmt"
 	"github.com/jom-io/gorig/global/variable"
+	configure "github.com/jom-io/gorig/utils/cofigure"
 	"gorm.io/gorm"
 	"time"
 )
@@ -74,7 +76,10 @@ func CreateComplex[T any](ctx context.Context, conType ConType, dbName string, t
 		return &c
 	}
 
-	if len(prefix) <= 0 && variable.TBPrefix != "" {
+	dbPrefix := configure.GetString(fmt.Sprintf("%s.%s.prefix", c.GetConStr(), dbName), "")
+	if dbPrefix != "" {
+		c.Con.GTable = dbPrefix + c.Con.GTable
+	} else if len(prefix) <= 0 && variable.TBPrefix != "" {
 		c.Con.GTable = variable.TBPrefix + c.Con.GTable
 	}
 
