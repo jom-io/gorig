@@ -315,6 +315,50 @@ func (d *dx[T]) Find() (domainx.ComplexList[T], *errors.Error) {
 	return result, nil
 }
 
+func (d *dx[T]) FindEach(handle func(*domainx.Complex[T]) *errors.Error) *errors.Error {
+	if err := d.checkMatches(); err != nil {
+		return err
+	}
+	find, e := d.Find()
+	if e != nil {
+		return e
+	}
+	for _, item := range find {
+		if err := handle(item); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *dx[T]) AllEach(handle func(*domainx.Complex[T]) *errors.Error) *errors.Error {
+	if err := d.checkMatches(); err != nil {
+		return err
+	}
+	var lastID int64
+	pageSize := int64(1000)
+	for {
+		pageResp, err := d.Page(1, pageSize, lastID)
+		if err != nil {
+			return err
+		}
+		if pageResp == nil || pageResp.Result == nil || len(*pageResp.Result) == 0 {
+			break
+		}
+		for _, item := range *pageResp.Result {
+			if err := handle(item); err != nil {
+				return err
+			}
+			lastID = item.GetID().Int64()
+		}
+		if int64(len(*pageResp.Result)) < pageSize {
+			break
+		}
+		pageResp = nil
+	}
+	return nil
+}
+
 func (d *dx[T]) Count() (int64, *errors.Error) {
 	count, err := domainx.CountByMatch(d.complex.Con, *d.matches)
 	if err != nil {
