@@ -60,6 +60,8 @@ type (
 		First() (*domainx.Complex[T], *errors.Error)
 		Get() (*domainx.Complex[T], *errors.Error)
 		Find() (domainx.ComplexList[T], *errors.Error)
+		FindEach(handle func(*domainx.Complex[T]) *errors.Error) *errors.Error
+		AllEach(handle func(*domainx.Complex[T]) *errors.Error) *errors.Error
 		Count() (int64, *errors.Error)
 		Exists() (bool, *errors.Error)
 		Sum(field string) (float64, *errors.Error)
