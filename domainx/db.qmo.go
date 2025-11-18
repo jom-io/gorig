@@ -361,9 +361,7 @@ func sortMongoFields(s []*Sort) []string {
 			sortList = append(sortList, order+prefix.ad(v.Field))
 		}
 	}
-	if len(sortList) == 0 {
-		sortList = append(sortList, "-con.id")
-	}
+	sortList = append(sortList, "-con.id")
 	return sortList
 }
 
