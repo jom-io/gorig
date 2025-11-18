@@ -104,7 +104,7 @@ func MustGetByID[T Identifiable](c *Con, id int64, result T) *errors.Error {
 		return err
 	}
 	if &result == nil || result.GetID().IsNil() {
-		return errors.Verify("Record not found")
+		return errors.Verify(fmt.Sprintf("%s record id %d not found", c.TableName(), id))
 	}
 	return nil
 }
