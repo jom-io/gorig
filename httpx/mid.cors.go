@@ -13,6 +13,7 @@ const (
 		"Content-Length, " +
 		"Accept-Encoding, " +
 		"X-CSRF-Token, " +
+		"X-Request-Id, " +
 		"Authorization, "
 )
 
