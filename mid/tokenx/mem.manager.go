@@ -63,7 +63,6 @@ func init() {
 
 func loadLocalTokens() {
 	if _, err := os.Stat(localTokensFile); os.IsNotExist(err) {
-		logger.Info(nil, "Tokens file does not exist, use default tokens")
 		return
 	}
 
