@@ -14,6 +14,8 @@ import (
 // Cache is a generic cache interface that defines basic cache operations
 type Cache[T any] interface {
 	IsInitialized() bool
+	Keys() ([]string, error)
+	Items() map[string]T
 	Get(key string) (T, error)
 	Set(key string, value T, expiration time.Duration) error
 	Del(key string) error

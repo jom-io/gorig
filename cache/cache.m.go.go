@@ -37,6 +37,27 @@ func (g *GoCache[T]) IsInitialized() bool {
 	return g != nil && g.cache != nil
 }
 
+func (g *GoCache[T]) Keys() ([]string, error) {
+	items := g.cache.Items()
+	keys := make([]string, 0, len(items))
+	for k := range items {
+		keys = append(keys, k)
+	}
+	return keys, nil
+}
+
+func (g *GoCache[T]) Items() map[string]T {
+	result := make(map[string]T)
+	items := g.cache.Items()
+	for k, v := range items {
+		val, ok := v.Object.(T)
+		if ok {
+			result[k] = val
+		}
+	}
+	return result
+}
+
 func (g *GoCache[T]) Get(key string) (T, error) {
 	var zero T
 	lock := g.getLock(key)

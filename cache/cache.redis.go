@@ -105,6 +105,31 @@ func (r *RedisCache[T]) IsInitialized() bool {
 	return r != nil && r.Client != nil
 }
 
+func (r *RedisCache[T]) Keys() ([]string, error) {
+	if !r.IsInitialized() {
+		return nil, fmt.Errorf("redis client is nil")
+	}
+	return r.Client.Keys(r.Ctx, "*").Result()
+}
+
+func (r *RedisCache[T]) Items() map[string]T {
+	result := make(map[string]T)
+	if !r.IsInitialized() {
+		return result
+	}
+	keys, err := r.Keys()
+	if err != nil {
+		return result
+	}
+	for _, key := range keys {
+		val, err := r.Get(key)
+		if err == nil {
+			result[key] = val
+		}
+	}
+	return result
+}
+
 func (r *RedisCache[T]) Get(key string) (T, error) {
 	var zero T
 	if !r.IsInitialized() {

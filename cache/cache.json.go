@@ -77,6 +77,34 @@ func (c *JSONFileCache[T]) cleanup() {
 	}
 }
 
+func (c *JSONFileCache[T]) Keys() ([]string, error) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	var keys []string
+	now := time.Now().Unix()
+	for k, v := range c.data {
+		if v.Expiration == 0 || now <= v.Expiration {
+			keys = append(keys, k)
+		}
+	}
+	return keys, nil
+}
+
+func (c *JSONFileCache[T]) Items() map[string]T {
+	result := make(map[string]T)
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	now := time.Now().Unix()
+	for k, v := range c.data {
+		if v.Expiration == 0 || now <= v.Expiration {
+			result[k] = v.Value
+		}
+	}
+	return result
+}
+
 func (c *JSONFileCache[T]) Get(key string) (T, error) {
 	var zero T
 	c.lock.RLock()

@@ -85,15 +85,80 @@ func NewSQLiteCache[T any](cacheType string) (*SQLiteCache[T], error) {
 	return ins, nil
 }
 
-func (c *SQLiteCache[T]) IsInitialized() bool {
-	return c != nil && c.db != nil
-}
-
 func cleanupIfMissingBaseFile(dbPath string) {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		os.Remove(dbPath + "-wal")
 		os.Remove(dbPath + "-shm")
 	}
+}
+
+func (c *SQLiteCache[T]) IsInitialized() bool {
+	return c != nil && c.db != nil
+}
+
+func (c *SQLiteCache[T]) Keys() ([]string, error) {
+	if c == nil {
+		return nil, errors.New("cache not initialized")
+	}
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
+	rows, err := c.db.Query("SELECT key, expiration FROM cache")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var keys []string
+	now := time.Now().Unix()
+	for rows.Next() {
+		var key string
+		var expiration int64
+		if err := rows.Scan(&key, &expiration); err != nil {
+			return nil, err
+		}
+		if expiration == 0 || now <= expiration {
+			keys = append(keys, key)
+		}
+	}
+	return keys, nil
+}
+
+func (c *SQLiteCache[T]) Items() map[string]T {
+	result := make(map[string]T)
+	if c == nil {
+		return result
+	}
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	_, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
+	rows, err := c.db.Query("SELECT key, value, expiration FROM cache")
+	if err != nil {
+		return result
+	}
+	defer rows.Close()
+
+	now := time.Now().Unix()
+	for rows.Next() {
+		var key string
+		var valueStr string
+		var expiration int64
+		if err := rows.Scan(&key, &valueStr, &expiration); err != nil {
+			continue
+		}
+		if expiration > 0 && now > expiration {
+			continue
+		}
+		var value T
+		if err := json.Unmarshal([]byte(valueStr), &value); err == nil {
+			result[key] = value
+		}
+	}
+	return result
 }
 
 func (c *SQLiteCache[T]) Get(key string) (T, error) {
