@@ -9,22 +9,22 @@ import (
 type MatchType string
 
 const (
-    MEq     MatchType = "="
-    MLt     MatchType = "<"
-    MLte    MatchType = "<="
-    MGt     MatchType = ">"
-    MGte    MatchType = ">="
-    MNE     MatchType = "!="
-    MLIKE   MatchType = "like"
-    MIN     MatchType = "in"
-    MNOTIN  MatchType = "not in"
-    // Array contains operators
-    MHas      MatchType = "has"      // array contains a single value
-    MHasAny   MatchType = "has_any"  // array contains any of values
-    MHasAll   MatchType = "has_all"  // array contains all values
-    Near    MatchType = "near"
-    NearLoc MatchType = "nearloc"
-    MNEmpty MatchType = "not empty"
+	MEq    MatchType = "="
+	MLt    MatchType = "<"
+	MLte   MatchType = "<="
+	MGt    MatchType = ">"
+	MGte   MatchType = ">="
+	MNE    MatchType = "!="
+	MLIKE  MatchType = "like"
+	MIN    MatchType = "in"
+	MNOTIN MatchType = "not in"
+	// Array contains operators
+	MHas    MatchType = "has"     // array contains a single value
+	MHasAny MatchType = "has_any" // array contains any of values
+	MHasAll MatchType = "has_all" // array contains all values
+	Near    MatchType = "near"
+	NearLoc MatchType = "nearloc"
+	MNEmpty MatchType = "not empty"
 )
 
 func Check(s string) bool {
@@ -92,10 +92,10 @@ func (h *Match) ToNearMatch() NearMatch {
 }
 
 func (m *Matches) Add(field string, value interface{}, t MatchType, ignore ...bool) *Matches {
-	if value == nil {
-		return m
-	}
 	if len(ignore) == 0 || !ignore[0] {
+		if value == nil {
+			return m
+		}
 		switch value.(type) {
 		case string:
 			if value.(string) == "" {
@@ -155,26 +155,26 @@ func (m *Matches) Ne(field string, value interface{}, ignore ...bool) *Matches {
 }
 
 func (m *Matches) In(field string, value interface{}, ignore ...bool) *Matches {
-    return m.Add(field, value, MIN, ignore...)
+	return m.Add(field, value, MIN, ignore...)
 }
 
 func (m *Matches) NotIn(field string, value interface{}, ignore ...bool) *Matches {
-    return m.Add(field, value, MNOTIN, ignore...)
+	return m.Add(field, value, MNOTIN, ignore...)
 }
 
 // Has checks array field contains a single value
 func (m *Matches) Has(field string, value interface{}, ignore ...bool) *Matches {
-    return m.Add(field, value, MHas, ignore...)
+	return m.Add(field, value, MHas, ignore...)
 }
 
 // HasAny checks array field contains any of values
 func (m *Matches) HasAny(field string, value interface{}, ignore ...bool) *Matches {
-    return m.Add(field, value, MHasAny, ignore...)
+	return m.Add(field, value, MHasAny, ignore...)
 }
 
 // HasAll checks array field contains all values
 func (m *Matches) HasAll(field string, value interface{}, ignore ...bool) *Matches {
-    return m.Add(field, value, MHasAll, ignore...)
+	return m.Add(field, value, MHasAll, ignore...)
 }
 
 func (m *Matches) NEmpty(field string) *Matches {
@@ -200,9 +200,9 @@ func (m *Matches) NearLoc(localField string, lat, lng, distance float64) *Matche
 }
 
 func (m *Matches) AddMatch(match *Match) *Matches {
-	if match.Value == nil {
-		return m
-	}
+	//if match.Value == nil {
+	//	return m
+	//}
 	*m = append(*m, *match)
 	return m
 }
