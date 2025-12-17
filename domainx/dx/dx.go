@@ -51,6 +51,8 @@ type (
 		AddMatch(m *domainx.Match) DQuery[T]
 		AddMatches(ms *domainx.Matches) DQuery[T]
 		Sort(field string, asc ...bool) DQuery[T]
+		Select(fields ...string) DQuery[T]
+		Omit(fields ...string) DQuery[T]
 
 		Save(t ...*T) (id int64, err *errors.Error)
 		checkMatches() *errors.Error
@@ -223,6 +225,20 @@ func (d *dx[T]) Sort(field string, asc ...bool) DQuery[T] {
 		return d
 	}
 	d.complex.Sort.AddSort(field, len(asc) > 0 && asc[0])
+	return d
+}
+
+func (d *dx[T]) Select(fields ...string) DQuery[T] {
+	if d.complex != nil && d.complex.Con != nil {
+		d.complex.Con.SetSelectFields(fields...)
+	}
+	return d
+}
+
+func (d *dx[T]) Omit(fields ...string) DQuery[T] {
+	if d.complex != nil && d.complex.Con != nil {
+		d.complex.Con.SetOmitFields(fields...)
+	}
 	return d
 }
 

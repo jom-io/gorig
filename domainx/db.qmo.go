@@ -242,7 +242,11 @@ func (s *mongoDBService) GetByID(c *Con, id int64, result interface{}) error {
 	if e != nil {
 		return e
 	}
-	if err := gColl.Find(c.Ctx, map[string]interface{}{"con.id": id}).One(result); err != nil {
+	query := gColl.Find(c.Ctx, map[string]interface{}{"con.id": id})
+	if projection := buildMongoProjection(c); projection != nil {
+		query = query.Select(projection)
+	}
+	if err := query.One(result); err != nil {
 		return err
 	}
 	return nil
@@ -344,6 +348,27 @@ func mapToBsonM(m map[string]interface{}, prefixes ...string) bson.M {
 		bm[key] = v
 	}
 	return bm
+}
+
+func buildMongoProjection(c *Con) bson.M {
+	if c == nil {
+		return nil
+	}
+	if len(c.SelectFields) > 0 {
+		projection := make(map[string]interface{}, len(c.SelectFields))
+		for _, field := range c.SelectFields {
+			projection[field] = 1
+		}
+		return mapToBsonM(projection)
+	}
+	if len(c.OmitFields) > 0 {
+		projection := make(map[string]interface{}, len(c.OmitFields))
+		for _, field := range c.OmitFields {
+			projection[field] = 0
+		}
+		return mapToBsonM(projection)
+	}
+	return nil
 }
 
 func sortMongoFields(s []*Sort) []string {
@@ -469,7 +494,11 @@ func (s *mongoDBService) FindByMatch(c *Con, matchList []Match, result interface
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(c.Ctx, mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...).Limit(10000).All(result)
+		query := coll.Find(c.Ctx, mapToBsonM(condition, prefixes...)).Sort(sortMongoFields(c.Sort)...)
+		if projection := buildMongoProjection(c); projection != nil {
+			query = query.Select(projection)
+		}
+		mErr := query.Limit(10000).All(result)
 		return mErr
 	}
 }
@@ -479,7 +508,11 @@ func (s *mongoDBService) GetByMatch(c *Con, matchList []Match, result interface{
 	if coll, e := getColl(c); e != nil {
 		return e
 	} else {
-		mErr := coll.Find(c.Ctx, mapToBsonM(condition)).Sort(sortMongoFields(c.Sort)...).One(result)
+		query := coll.Find(c.Ctx, mapToBsonM(condition)).Sort(sortMongoFields(c.Sort)...)
+		if projection := buildMongoProjection(c); projection != nil {
+			query = query.Select(projection)
+		}
+		mErr := query.One(result)
 		return mErr
 	}
 }
@@ -556,12 +589,20 @@ func (s *mongoDBService) FindByPageMatch(c *Con, matchList []Match, page *load.P
 			m := mapToBsonM(condition, prefixes...)
 			m["con.id"] = bson.M{"$lt": page.LastID}
 			count, _ = coll.Find(c.Ctx, m).Count()
-			mErr = coll.Find(c.Ctx, m).Sort(sortMongoFields(c.Sort)...).Limit(page.Size).All(result)
+			query := coll.Find(c.Ctx, m).Sort(sortMongoFields(c.Sort)...).Limit(page.Size)
+			if projection := buildMongoProjection(c); projection != nil {
+				query = query.Select(projection)
+			}
+			mErr = query.All(result)
 		} else {
 			bsonM := mapToBsonM(condition, prefixes...)
 			count, _ = coll.Find(c.Ctx, bsonM).Count()
 			skip := (page.Page - 1) * page.Size
-			mErr = coll.Find(c.Ctx, bsonM).Sort(sortMongoFields(c.Sort)...).Skip(skip).Limit(page.Size).All(result)
+			query := coll.Find(c.Ctx, bsonM).Sort(sortMongoFields(c.Sort)...).Skip(skip).Limit(page.Size)
+			if projection := buildMongoProjection(c); projection != nil {
+				query = query.Select(projection)
+			}
+			mErr = query.All(result)
 		}
 		total.Set(count)
 		if mErr != nil {

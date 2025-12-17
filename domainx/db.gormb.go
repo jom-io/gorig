@@ -106,8 +106,9 @@ func (s *gormDBService) GetByID(c *Con, id int64, result interface{}) error {
 	if c.MysqlDB.WithContext(c.Ctx) == nil {
 		return fmt.Errorf("get db is nil")
 	}
-	//result = make(map[string]interface{})
-	if err := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("id = ?", id).First(result).Error; err != nil {
+	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
+	tx = applyMysqlFields(tx, c, nil)
+	if err := tx.Where("id = ?", id).First(result).Error; err != nil {
 		return err
 	}
 	return nil
@@ -181,7 +182,8 @@ var mysqlKeywords = []string{
 	"DESCRIBE", "EXPLAIN", "SHOW", "GRANT", "REVOKE", "USE", "LOCK", "UNLOCK", "SET", "COMMIT", "ROLLBACK",
 }
 
-func matchMysqlCond(matchList []Match, tx *gorm.DB) {
+func matchMysqlCond(matchList []Match, tx *gorm.DB) *NearMatch {
+	var nearMatch *NearMatch
 	for _, match := range matchList {
 		if v, ok := match.Value.(ValueField); ok && !v.Check(mysqlKeywords...) {
 			continue
@@ -251,11 +253,12 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 			continue
 		case Near:
 			near := match.ToNearMatch()
-			tx = tx.Select("*, (6371 * acos(cos(radians(?)) * cos(radians("+near.LatField+")) * cos(radians("+near.LngField+") - radians(?)) + sin(radians(?)) * sin(radians("+near.LatField+")))) AS distance", near.Lat, near.Lng, near.Lat)
 			if near.Distance > 0 {
-				tx = tx.Where("6371 * acos(cos(radians(?)) * cos(radians("+near.LatField+")) * cos(radians("+near.LngField+") - radians(?)) + sin(radians(?)) * sin(radians("+near.LatField+"))) < ?", near.Lat, near.Lng, near.Lat, near.Distance)
+				tx = tx.Where(mysqlNearExpr(near)+" < ?", near.Lat, near.Lng, near.Lat, near.Distance)
 			}
 			tx = tx.Order("distance")
+			nm := near
+			nearMatch = &nm
 			continue
 		default:
 			tx = tx.Where(match.Field+" = ?", match.Value)
@@ -268,6 +271,11 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) {
 			tx = tx.Where(match.Field+" "+condition+" ?", match.Value)
 		}
 	}
+	return nearMatch
+}
+
+func mysqlNearExpr(near NearMatch) string {
+	return "6371 * acos(cos(radians(?)) * cos(radians(" + near.LatField + ")) * cos(radians(" + near.LngField + ") - radians(?)) + sin(radians(?)) * sin(radians(" + near.LatField + ")))"
 }
 
 func sortMysqlCond(sortList Sorts, tx *gorm.DB) {
@@ -282,10 +290,33 @@ func sortMysqlCond(sortList Sorts, tx *gorm.DB) {
 	}
 }
 
+func applyMysqlFields(tx *gorm.DB, c *Con, near *NearMatch) *gorm.DB {
+	if c == nil {
+		return tx
+	}
+
+	selectFields := append([]string{}, c.SelectFields...)
+	if near != nil {
+		if len(selectFields) == 0 {
+			selectFields = append(selectFields, "*")
+		}
+		selectFields = append(selectFields, "("+mysqlNearExpr(*near)+") AS distance")
+		tx = tx.Select(strings.Join(selectFields, ","), near.Lat, near.Lng, near.Lat)
+	} else if len(selectFields) > 0 {
+		tx = tx.Select(selectFields)
+	}
+
+	if len(c.OmitFields) > 0 {
+		tx = tx.Omit(c.OmitFields...)
+	}
+	return tx
+}
+
 func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	matchMysqlCond(matchList, tx)
+	near := matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
+	tx = applyMysqlFields(tx, c, near)
 	if err := tx.Limit(10000).Find(result).Error; err != nil {
 		return err
 	}
@@ -294,8 +325,9 @@ func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{
 
 func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	matchMysqlCond(matchList, tx)
+	near := matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
+	tx = applyMysqlFields(tx, c, near)
 	if err := tx.First(result).Error; err != nil {
 		return err
 	}
@@ -304,7 +336,7 @@ func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}
 
 func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("deleted_at is null")
-	matchMysqlCond(matchList, tx)
+	_ = matchMysqlCond(matchList, tx)
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, err
@@ -314,7 +346,7 @@ func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 
 func (s *gormDBService) ExistsByMatch(c *Con, matchList []Match) (bool, error) {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	matchMysqlCond(matchList, tx)
+	_ = matchMysqlCond(matchList, tx)
 	var exists int
 	if err := tx.Select("1").Limit(1).Scan(&exists).Error; err != nil {
 		return false, err
@@ -327,7 +359,7 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 	if !Check(field) {
 		return 0, errors.Sys(fmt.Sprintf("field is not valid: %s", field))
 	}
-	matchMysqlCond(matchList, tx)
+	_ = matchMysqlCond(matchList, tx)
 	var sum *float64
 	if err := tx.Select("sum(" + field + ")").Scan(&sum).Error; err != nil {
 		return 0, err
@@ -340,16 +372,20 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 
 func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	matchMysqlCond(matchList, tx)
+	near := matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	count := int64(0)
 	if err := tx.Model(result).Count(&count).Error; err != nil {
 		return err
 	}
 	if page.LastID > 0 {
-		tx = tx.Where("id < ?", page.LastID).Order("id desc").Limit(int(page.Size)).Find(result)
+		query := tx.Where("id < ?", page.LastID).Order("id desc").Limit(int(page.Size))
+		query = applyMysqlFields(query, c, near)
+		tx = query.Find(result)
 	} else {
-		tx = tx.Order("id desc").Limit(int(page.Size)).Offset(int(page.Offset())).Find(result)
+		query := tx.Order("id desc").Limit(int(page.Size)).Offset(int(page.Offset()))
+		query = applyMysqlFields(query, c, near)
+		tx = query.Find(result)
 	}
 	total.Set(count)
 	return tx.Error

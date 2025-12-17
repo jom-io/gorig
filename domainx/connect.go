@@ -5,6 +5,7 @@ import (
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/qiniu/qmgo"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type Con struct {
@@ -16,6 +17,8 @@ type Con struct {
 	DBName         string       `gorm:"-" bson:"-" json:"-"`
 	GTable         string       `gorm:"-" bson:"-" json:"-"`
 	Sort           Sorts        `gorm:"-" bson:"-" json:"-"`
+	SelectFields   []string     `gorm:"-" bson:"-" json:"-"`
+	OmitFields     []string     `gorm:"-" bson:"-" json:"-"`
 	SaveCreateTime func()       `gorm:"-" bson:"-" json:"-"`
 	SaveUpdateTime func()       `gorm:"-" bson:"-" json:"-"`
 }
@@ -102,4 +105,32 @@ func (c *Con) GenerateID() int64 {
 
 func (c *Con) GenerateSetID() {
 	c.ID = c.GenerateID()
+}
+
+func (c *Con) SetSelectFields(fields ...string) {
+	c.SelectFields = sanitizeFields(fields...)
+}
+
+func (c *Con) SetOmitFields(fields ...string) {
+	c.OmitFields = sanitizeFields(fields...)
+}
+
+func sanitizeFields(fields ...string) []string {
+	if len(fields) == 0 {
+		return nil
+	}
+	cleaned := make([]string, 0, len(fields))
+	seen := make(map[string]struct{})
+	for _, f := range fields {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		if _, ok := seen[f]; ok {
+			continue
+		}
+		seen[f] = struct{}{}
+		cleaned = append(cleaned, f)
+	}
+	return cleaned
 }
