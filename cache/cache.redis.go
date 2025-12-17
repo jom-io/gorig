@@ -81,6 +81,75 @@ type RedisCache[T any] struct {
 	Ctx    context.Context
 }
 
+func (r *RedisCache[T]) LPop(queue string) (value T, err error) {
+	if !r.IsInitialized() {
+		return value, fmt.Errorf("redis client is nil")
+	}
+	result, err := r.Client.LPop(r.Ctx, queue).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return value, ErrCacheMiss
+		}
+		return value, err
+	}
+	if err = json.Unmarshal([]byte(result), &value); err != nil {
+		return value, err
+	}
+	return value, nil
+}
+
+func (r *RedisCache[T]) AddDelayed(queue string, value T, score float64) error {
+	if !r.IsInitialized() {
+		return fmt.Errorf("redis client is nil")
+	}
+	b, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return r.Client.ZAdd(r.Ctx, queue, &redis.Z{
+		Score:  score,
+		Member: b,
+	}).Err()
+}
+
+func (r *RedisCache[T]) PopDueDelayed(queue string, now float64, limit int) ([]T, error) {
+	if !r.IsInitialized() {
+		return nil, fmt.Errorf("redis client is nil")
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	rangeBy := &redis.ZRangeBy{
+		Min:    "-inf",
+		Max:    fmt.Sprintf("%f", now),
+		Offset: 0,
+		Count:  int64(limit),
+	}
+	items, err := r.Client.ZRangeByScore(r.Ctx, queue, rangeBy).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	removed := make([]interface{}, 0, len(items))
+	results := make([]T, 0, len(items))
+	for _, item := range items {
+		var v T
+		if err := json.Unmarshal([]byte(item), &v); err == nil {
+			results = append(results, v)
+			removed = append(removed, item)
+		}
+	}
+	if len(removed) > 0 {
+		if err := r.Client.ZRem(r.Ctx, queue, removed...).Err(); err != nil {
+			return nil, err
+		}
+	}
+	return results, nil
+}
+
 func (r *RedisCache[T]) GetCtx() context.Context {
 	return r.Ctx
 }

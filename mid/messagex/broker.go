@@ -2,6 +2,7 @@ package messagex
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jom-io/gorig/utils/errors"
 	"github.com/rs/xid"
@@ -17,6 +18,7 @@ type Message struct {
 	GroupID string
 	SubID   uint64
 	Topic   string
+	Retry   int
 	Content map[string]interface{}
 }
 
@@ -31,7 +33,9 @@ const (
 // MessageBroker 定义了消息代理的行为。
 type MessageBroker interface {
 	Subscribe(topic string, handler func(message *Message) *errors.Error) (uint64, *errors.Error)
-	SubscribeGroup(topic string, groupID string, handler func(message *Message) *errors.Error) (uint64, *errors.Error) // 指定groupID
+	SubscribeGroup(topic string, groupID string, handler func(message *Message) *errors.Error) (uint64, *errors.Error)  // 指定groupID
+	SubscribeSeq(topic string, handler func(message *Message) *errors.Error, opts ...SeqOption) (uint64, *errors.Error) // 顺序消费，handler 同步执行
+	ReplayDLQ(topic string, limit int) *errors.Error                                                                    // 将DLQ消息重新入队，limit<=0 表示全部
 	UnSubscribe(topic string, subID uint64) *errors.Error
 	Publish(topic string, message *Message) *errors.Error
 	PublishGroup(topic string, groupID string, message *Message) *errors.Error // 指定groupID
@@ -57,6 +61,11 @@ func (m *Message) GetValueInt64(key string) int64 {
 		return v.(int64)
 	case int:
 		return int64(v.(int))
+	case float64:
+		return int64(v.(float64))
+	case json.Number:
+		i, _ := v.(json.Number).Int64()
+		return i
 	case string:
 		i, _ := strconv.ParseInt(v.(string), 10, 64)
 		return i

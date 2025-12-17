@@ -69,6 +69,10 @@ func RegisterTopic(topic any, handler func(message *Message) *errors.Error) (uin
 	return Ins(Local).RegisterTopic(topic, handler)
 }
 
+func RegisterTopicSeq(topic any, handler func(message *Message) *errors.Error, opts ...SeqOption) (uint64, *errors.Error) {
+	return Ins(Local).RegisterTopicSeq(topic, handler, opts...)
+}
+
 func UnSubscribe(topic any, subID uint64) *errors.Error {
 	return Ins(Local).UnRegisterTopic(topic, subID)
 }
@@ -81,6 +85,28 @@ func (s *MessageService) RegisterTopic(topic any, handler func(message *Message)
 		logger.Error(nil, "Registering topic failed", zap.String("topic", topicStr), zap.Error(e))
 	}
 	return subId, e
+}
+
+func (s *MessageService) RegisterTopicSeq(topic any, handler func(message *Message) *errors.Error, opts ...SeqOption) (uint64, *errors.Error) {
+	topicStr := getTopicStr(topic)
+	subId, e := Ins(s.BrokerType).Broker.SubscribeSeq(topicStr, handler, opts...)
+	sys.Info(" # Reg Topic Seq: ", topic, " # SubID: ", subId, " # BrokerType: ", s.BrokerType)
+	if e != nil {
+		logger.Error(nil, "Registering topic (seq) failed", zap.String("topic", topicStr), zap.Error(e))
+	}
+	return subId, e
+}
+
+func ReplayDLQ(topic any, limit int, brokerType ...BrokerType) *errors.Error {
+	if len(brokerType) == 0 {
+		brokerType = []BrokerType{Local}
+	}
+	return Ins(brokerType[0]).ReplayDLQ(topic, limit)
+}
+
+func (s *MessageService) ReplayDLQ(topic any, limit int) *errors.Error {
+	topicStr := getTopicStr(topic)
+	return Ins(s.BrokerType).Broker.ReplayDLQ(topicStr, limit)
 }
 
 func (s *MessageService) UnRegisterTopic(topic any, subID uint64) *errors.Error {
