@@ -5,6 +5,7 @@ import (
 	"github.com/jom-io/gorig/domainx"
 	"github.com/jom-io/gorig/domainx/dx"
 	"github.com/jom-io/gorig/serv"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/datatypes"
 	"testing"
 	"time"
@@ -308,6 +309,26 @@ func TestTestModel_CRUD(t *testing.T) {
 		if len(resultsB) != 0 {
 			t.Fatal("Expected empty results from HasAll for non-existing combination")
 		}
+	})
+
+	t.Run("SelectFields", func(t *testing.T) {
+		result, err := dx.On[TestModel](ctx).WithID(id).Select("id", "test_field1").Get()
+		if err != nil {
+			t.Fatalf("Failed to get model with select: %v", err)
+		}
+		assert.NotNil(t, result)
+		assert.Equal(t, "example", result.Data.TestField1)
+		assert.Equal(t, 0, result.Data.TestField2)
+	})
+
+	t.Run("OmitFields", func(t *testing.T) {
+		result, err := dx.On[TestModel](ctx).WithID(id).Omit("test_field2").Get()
+		if err != nil {
+			t.Fatalf("Failed to get model with omit: %v", err)
+		}
+		assert.NotNil(t, result)
+		assert.Equal(t, "example", result.Data.TestField1)
+		assert.Equal(t, 0, result.Data.TestField2)
 	})
 
 	t.Run("DeleteByID", func(t *testing.T) {
