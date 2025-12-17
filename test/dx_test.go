@@ -21,14 +21,14 @@ type TestModel struct {
 }
 
 // Mysql configuration for the TestModel
-func (t *TestModel) DConfig() (domainx.ConType, string, string) {
-	return domainx.Mysql, "main", "test_model"
-}
+//func (t *TestModel) DConfig() (domainx.ConType, string, string) {
+//	return domainx.Mysql, "main", "test_model"
+//}
 
 // Mongo configuration for the TestModel
-//func (t *TestModel) DConfig() (domainx.ConType, string, string) {
-//	return domainx.Mongo, "main", "test_model"
-//}
+func (t *TestModel) DConfig() (domainx.ConType, string, string) {
+	return domainx.Mongo, "main", "test_model"
+}
 
 func setupTestModel() *TestModel {
 	testModel := &TestModel{
