@@ -330,13 +330,13 @@ func (c *SQLiteCachePage[T]) GroupByTime(
 
 	timeFmt := fmt.Sprintf("strftime('%s', ct)", timeFormat)
 	if granularity == Granularity5Minutes {
-		timeFmt = fmt.Sprintf("strftime('%s', ct/300) * 300", timeFormat)
+		timeFmt = "strftime('%Y-%m-%d %H:%M', datetime((strftime('%s', ct)/300)*300, 'unixepoch'))"
 	}
 	if granularity == Granularity10Minutes {
-		timeFmt = fmt.Sprintf("strftime('%s', ct/600) * 600", timeFormat)
+		timeFmt = "strftime('%Y-%m-%d %H:%M', datetime((strftime('%s', ct)/600)*600, 'unixepoch'))"
 	}
 	if granularity == Granularity30Minutes {
-		timeFmt = fmt.Sprintf("strftime('%s', ct/1800) * 1800", timeFormat)
+		timeFmt = "strftime('%Y-%m-%d %H:%M', datetime((strftime('%s', ct)/1800)*1800, 'unixepoch'))"
 	}
 
 	aggFieldsStr := strings.Join(aggFields, ", ")
