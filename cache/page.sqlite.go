@@ -584,12 +584,40 @@ func buildWhereClause(conditions map[string]any) (string, []any) {
 					sqlOp = "!="
 				case "$eq":
 					sqlOp = "="
+				case "$in":
+					slice := toInterfaceSlice(opVal)
+					if len(slice) == 0 {
+						continue
+					}
+					placeholders := strings.Repeat("?,", len(slice))
+					placeholders = strings.TrimSuffix(placeholders, ",")
+					clauses = append(clauses, fmt.Sprintf("%s IN (%s)", field, placeholders))
+					args = append(args, slice...)
+					continue
 				default:
 					continue // unsupported
 				}
 				clauses = append(clauses, fmt.Sprintf("%s %s ?", field, sqlOp))
 				args = append(args, opVal)
 			}
+		case []string:
+			if len(val) == 0 {
+				continue
+			}
+			placeholders := strings.Repeat("?,", len(val))
+			placeholders = strings.TrimSuffix(placeholders, ",")
+			clauses = append(clauses, fmt.Sprintf("%s IN (%s)", field, placeholders))
+			for _, sv := range val {
+				args = append(args, sv)
+			}
+		case []any:
+			if len(val) == 0 {
+				continue
+			}
+			placeholders := strings.Repeat("?,", len(val))
+			placeholders = strings.TrimSuffix(placeholders, ",")
+			clauses = append(clauses, fmt.Sprintf("%s IN (%s)", field, placeholders))
+			args = append(args, val...)
 		default:
 			clauses = append(clauses, fmt.Sprintf("%s = ?", field))
 			args = append(args, v)
@@ -597,6 +625,39 @@ func buildWhereClause(conditions map[string]any) (string, []any) {
 	}
 	where += strings.Join(clauses, " AND ")
 	return where, args
+}
+
+func toInterfaceSlice(v any) []any {
+	switch arr := v.(type) {
+	case []any:
+		return arr
+	case []string:
+		res := make([]any, len(arr))
+		for i, val := range arr {
+			res[i] = val
+		}
+		return res
+	case []int:
+		res := make([]any, len(arr))
+		for i, val := range arr {
+			res[i] = val
+		}
+		return res
+	case []int64:
+		res := make([]any, len(arr))
+		for i, val := range arr {
+			res[i] = val
+		}
+		return res
+	case []float64:
+		res := make([]any, len(arr))
+		for i, val := range arr {
+			res[i] = val
+		}
+		return res
+	default:
+		return nil
+	}
 }
 
 func parseGroupTime(granularity Granularity, grp string) (time.Time, error) {
