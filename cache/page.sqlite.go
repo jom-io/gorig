@@ -393,6 +393,104 @@ func (c *SQLiteCachePage[T]) GroupByTime(
 	return result, nil
 }
 
+func (c *SQLiteCachePage[T]) GroupByFields(
+	conditions map[string]any,
+	groupFields []string,
+	aggFields []AggField,
+	sorts ...PageSorter,
+) ([]*PageGroupItem, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if len(groupFields) == 0 {
+		return nil, fmt.Errorf("groupFields cannot be empty")
+	}
+	if len(aggFields) == 0 {
+		return nil, fmt.Errorf("aggFields cannot be empty")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
+	where, args := buildWhereClause(conditions)
+	if where == "" {
+		where = "WHERE 1=1"
+	}
+
+	groupExprs := make([]string, len(groupFields))
+	groupAliases := make([]string, len(groupFields))
+	for i, gf := range groupFields {
+		alias := sanitizeColumnName(gf)
+		groupAliases[i] = alias
+		groupExprs[i] = fmt.Sprintf("json_extract(data, '$.%s') AS %s", gf, alias)
+	}
+
+	aggExprs := make([]string, len(aggFields))
+	aggAliases := make([]string, len(aggFields))
+	for i, af := range aggFields {
+		alias := af.Alias
+		if alias == "" {
+			alias = sanitizeColumnName(af.Field)
+		}
+		aggAliases[i] = alias
+
+		aggFunc := strings.ToUpper(string(af.Agg))
+		if aggFunc == string(AggTotal) {
+			aggFunc = string(AggSum)
+		}
+
+		aggExprs[i] = fmt.Sprintf("%s(CAST(json_extract(data, '$.%s') AS REAL)) AS %s", aggFunc, af.Field, alias)
+	}
+
+	selectFields := append(groupExprs, aggExprs...)
+	groupBy := "GROUP BY " + strings.Join(groupAliases, ", ")
+	orderBy := getOrderByClauseRaw(sorts)
+
+	query := fmt.Sprintf(`SELECT %s FROM %s %s %s %s`, strings.Join(selectFields, ", "), c.table, where, groupBy, orderBy)
+
+	rows, err := c.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*PageGroupItem, 0)
+	for rows.Next() {
+		gCols := make([]sql.NullString, len(groupAliases))
+		aCols := make([]sql.NullFloat64, len(aggAliases))
+		scanArgs := make([]interface{}, 0, len(groupAliases)+len(aggAliases))
+		for i := range gCols {
+			scanArgs = append(scanArgs, &gCols[i])
+		}
+		for i := range aCols {
+			scanArgs = append(scanArgs, &aCols[i])
+		}
+
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+
+		item := &PageGroupItem{
+			Group: make(map[string]string),
+			Value: make(map[string]float64),
+		}
+		for i, gv := range gCols {
+			if gv.Valid {
+				item.Group[groupFields[i]] = gv.String
+			}
+		}
+		for i, av := range aCols {
+			if av.Valid {
+				item.Value[aggAliases[i]] = decimal.Round(av.Float64, 4)
+			} else {
+				item.Value[aggAliases[i]] = 0
+			}
+		}
+		result = append(result, item)
+	}
+	return result, nil
+}
+
 func (c *SQLiteCachePage[T]) Update(conditions map[string]any, value *T) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -541,4 +639,27 @@ func getWeekStartTime(year, week int) time.Time {
 		t = t.AddDate(0, 0, 1)
 	}
 	return t.AddDate(0, 0, (week-1)*7)
+}
+
+func getOrderByClauseRaw(sorts []PageSorter) string {
+	if len(sorts) == 0 {
+		return ""
+	}
+	orderClauses := make([]string, len(sorts))
+	for i, sort := range sorts {
+		dir := "DESC"
+		if sort.Asc {
+			dir = "ASC"
+		}
+		orderClauses[i] = fmt.Sprintf("%s %s", sort.SortField, dir)
+	}
+	return "ORDER BY " + strings.Join(orderClauses, ", ")
+}
+
+func sanitizeColumnName(name string) string {
+	name = strings.TrimSpace(name)
+	name = strings.ReplaceAll(name, "`", "")
+	name = strings.ReplaceAll(name, "\"", "")
+	name = strings.ReplaceAll(name, "'", "")
+	return strings.ReplaceAll(name, ".", "_")
 }

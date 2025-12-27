@@ -17,6 +17,7 @@ type Pager[T any] interface {
 	Update(conditions map[string]any, value *T) error
 	Delete(conditions map[string]any) error
 	GroupByTime(conditions map[string]any, from, to time.Time, granularity Granularity, agg Agg, fields ...string) ([]*PageTimeItem, error)
+	GroupByFields(conditions map[string]any, groupFields []string, aggFields []AggField, sorts ...PageSorter) ([]*PageGroupItem, error)
 }
 
 type Granularity string
@@ -58,6 +59,17 @@ type PageCache[T any] struct {
 
 type PageTimeItem struct {
 	At    string             `json:"at"`
+	Value map[string]float64 `json:"value"`
+}
+
+type AggField struct {
+	Field string
+	Agg   Agg
+	Alias string
+}
+
+type PageGroupItem struct {
+	Group map[string]string  `json:"group"`
 	Value map[string]float64 `json:"value"`
 }
 
