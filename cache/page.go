@@ -17,7 +17,7 @@ type Pager[T any] interface {
 	Update(conditions map[string]any, value *T) error
 	Delete(conditions map[string]any) error
 	GroupByTime(conditions map[string]any, from, to time.Time, granularity Granularity, agg Agg, fields ...string) ([]*PageTimeItem, error)
-	GroupByFields(conditions map[string]any, groupFields []string, aggFields []AggField, sorts ...PageSorter) ([]*PageGroupItem, error)
+	GroupByFields(conditions map[string]any, groupFields []string, aggFields []AggField, page, size int64, sorts ...PageSorter) (*PageCache[PageGroupItem], error)
 }
 
 type Granularity string
@@ -48,6 +48,7 @@ const (
 type PageSorter struct {
 	SortField string
 	Asc       bool
+	Expr      string // optional raw expression
 }
 
 type PageCache[T any] struct {

@@ -81,6 +81,10 @@ func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interfac
 	}
 
 	if ctx.Request.ContentLength == 0 || rt == Get {
+		if req == nil {
+			req = make(map[string]interface{})
+		}
+		ctx.Set("params", req)
 		return req
 	}
 

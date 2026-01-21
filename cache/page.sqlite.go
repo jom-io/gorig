@@ -397,8 +397,9 @@ func (c *SQLiteCachePage[T]) GroupByFields(
 	conditions map[string]any,
 	groupFields []string,
 	aggFields []AggField,
+	page, size int64,
 	sorts ...PageSorter,
-) ([]*PageGroupItem, error) {
+) (*PageCache[PageGroupItem], error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -409,20 +410,58 @@ func (c *SQLiteCachePage[T]) GroupByFields(
 		return nil, fmt.Errorf("aggFields cannot be empty")
 	}
 
+	if page <= 0 {
+		page = 1
+	}
+	if size < 0 {
+		size = 0
+	}
+
+	cond := conditions
+	havingExpr := ""
+	if conditions != nil {
+		cond = make(map[string]any, len(conditions))
+		for k, v := range conditions {
+			cond[k] = v
+		}
+		if hv, ok := cond["$having"]; ok {
+			delete(cond, "$having")
+			switch val := hv.(type) {
+			case string:
+				if strings.TrimSpace(val) != "" {
+					havingExpr = val
+				}
+			case []string:
+				parts := make([]string, 0, len(val))
+				for _, part := range val {
+					if strings.TrimSpace(part) != "" {
+						parts = append(parts, part)
+					}
+				}
+				if len(parts) > 0 {
+					havingExpr = strings.Join(parts, " OR ")
+				}
+			}
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
 	defer cancel()
 
-	where, args := buildWhereClause(conditions)
+	where, args := buildWhereClause(cond)
 	if where == "" {
 		where = "WHERE 1=1"
 	}
 
 	groupExprs := make([]string, len(groupFields))
 	groupAliases := make([]string, len(groupFields))
+	groupByExprs := make([]string, len(groupFields))
 	for i, gf := range groupFields {
 		alias := sanitizeColumnName(gf)
+		expr := fmt.Sprintf("json_extract(data, '$.%s')", gf)
 		groupAliases[i] = alias
-		groupExprs[i] = fmt.Sprintf("json_extract(data, '$.%s') AS %s", gf, alias)
+		groupByExprs[i] = expr
+		groupExprs[i] = fmt.Sprintf("%s AS %s", expr, alias)
 	}
 
 	aggExprs := make([]string, len(aggFields))
@@ -444,9 +483,26 @@ func (c *SQLiteCachePage[T]) GroupByFields(
 
 	selectFields := append(groupExprs, aggExprs...)
 	groupBy := "GROUP BY " + strings.Join(groupAliases, ", ")
+	groupByExpr := "GROUP BY " + strings.Join(groupByExprs, ", ")
 	orderBy := getOrderByClauseRaw(sorts)
+	havingSQL := ""
+	if strings.TrimSpace(havingExpr) != "" {
+		havingSQL = " HAVING " + havingExpr
+	}
 
-	query := fmt.Sprintf(`SELECT %s FROM %s %s %s %s`, strings.Join(selectFields, ", "), c.table, where, groupBy, orderBy)
+	var total int64
+	countQuery := fmt.Sprintf(`SELECT COUNT(1) FROM (SELECT %s FROM %s %s %s%s) AS sub`, strings.Join(selectFields, ", "), c.table, where, groupByExpr, havingSQL)
+	if err := c.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, fmt.Errorf("count query failed: %w", err)
+	}
+
+	limitSQL := ""
+	if size > 0 {
+		offset := (page - 1) * size
+		limitSQL = fmt.Sprintf(" LIMIT %d OFFSET %d", size, offset)
+	}
+
+	query := fmt.Sprintf(`SELECT %s FROM %s %s %s%s %s%s`, strings.Join(selectFields, ", "), c.table, where, groupBy, havingSQL, orderBy, limitSQL)
 
 	rows, err := c.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -488,7 +544,13 @@ func (c *SQLiteCachePage[T]) GroupByFields(
 		}
 		result = append(result, item)
 	}
-	return result, nil
+
+	return &PageCache[PageGroupItem]{
+		Total: total,
+		Page:  page,
+		Size:  size,
+		Items: result,
+	}, nil
 }
 
 func (c *SQLiteCachePage[T]) Update(conditions map[string]any, value *T) error {
@@ -584,6 +646,8 @@ func buildWhereClause(conditions map[string]any) (string, []any) {
 					sqlOp = "!="
 				case "$eq":
 					sqlOp = "="
+				case "$like":
+					sqlOp = "LIKE"
 				case "$in":
 					slice := toInterfaceSlice(opVal)
 					if len(slice) == 0 {
@@ -712,7 +776,11 @@ func getOrderByClauseRaw(sorts []PageSorter) string {
 		if sort.Asc {
 			dir = "ASC"
 		}
-		orderClauses[i] = fmt.Sprintf("%s %s", sort.SortField, dir)
+		field := sort.SortField
+		if strings.TrimSpace(sort.Expr) != "" {
+			field = sort.Expr
+		}
+		orderClauses[i] = fmt.Sprintf("%s %s", field, dir)
 	}
 	return "ORDER BY " + strings.Join(orderClauses, ", ")
 }

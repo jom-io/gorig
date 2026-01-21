@@ -54,3 +54,5 @@ Thumbs.db
 *.cache.json
 *.deploy
 *.linux64
+PROMPT.md
+AGENTS.md
