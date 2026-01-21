@@ -54,7 +54,6 @@ func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interfac
 		return ctx.Keys["params"].(map[string]interface{})
 	}
 	contentType := ctx.Request.Header.Get("Content-Type")
-	logger.Info(ctx, fmt.Sprintf("url: %v", ctx.Request.URL), zap.Any("method", ctx.Request.Method), zap.Any("Content-Type", contentType))
 	var req map[string]interface{}
 	// 读取Get中的参数
 	for k, v := range ctx.Request.URL.Query() {
@@ -81,10 +80,6 @@ func GetParams(ctx *gin.Context, requestType ...RequestType) map[string]interfac
 	}
 
 	if ctx.Request.ContentLength == 0 || rt == Get {
-		if req == nil {
-			req = make(map[string]interface{})
-		}
-		ctx.Set("params", req)
 		return req
 	}
 
