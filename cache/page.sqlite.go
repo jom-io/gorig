@@ -658,6 +658,16 @@ func buildWhereClause(conditions map[string]any) (string, []any) {
 					clauses = append(clauses, fmt.Sprintf("%s IN (%s)", field, placeholders))
 					args = append(args, slice...)
 					continue
+				case "$nin":
+					slice := toInterfaceSlice(opVal)
+					if len(slice) == 0 {
+						continue
+					}
+					placeholders := strings.Repeat("?,", len(slice))
+					placeholders = strings.TrimSuffix(placeholders, ",")
+					clauses = append(clauses, fmt.Sprintf("%s NOT IN (%s)", field, placeholders))
+					args = append(args, slice...)
+					continue
 				default:
 					continue // unsupported
 				}
