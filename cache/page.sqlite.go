@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"reflect"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -88,6 +89,10 @@ func NewSQLiteCachePage[T any](name string) (*SQLiteCachePage[T], error) {
 		return nil, err
 	}
 
+	if err := cache.ensureIndexesForType(); err != nil {
+		logger.Error(nil, fmt.Sprintf("ensure index failed: %v", err))
+	}
+
 	cachePageSqliteIns.Store(name, cache)
 
 	return cache, nil
@@ -164,6 +169,73 @@ func (c *SQLiteCachePage[T]) ensureTable() error {
 
 	if _, err := c.db.ExecContext(ctx, triggerSQL); err != nil {
 		return fmt.Errorf("create trigger failed: %w", err)
+	}
+	return nil
+}
+
+func (c *SQLiteCachePage[T]) ensureIndexesForType() error {
+	t := reflect.TypeOf((*T)(nil)).Elem()
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+	single := map[string]string{}
+	groups := map[string][]string{}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if f.PkgPath != "" {
+			continue
+		}
+		jsonKey := jsonKeyFromField(f)
+		if jsonKey == "" {
+			continue
+		}
+		if name, ok := f.Tag.Lookup("idx"); ok {
+			idxName := strings.TrimSpace(name)
+			if idxName == "" {
+				idxName = jsonKey
+			}
+			single[idxName] = jsonKey
+		}
+		grp := strings.TrimSpace(f.Tag.Get("idx_group"))
+		if grp != "" {
+			groups[grp] = append(groups[grp], jsonKey)
+		}
+	}
+	if len(single) == 0 && len(groups) == 0 {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sqliteTimeOut)
+	defer cancel()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for name, key := range single {
+		idxName := sanitizeIndexName("idx_" + c.table + "_" + name)
+		jsonKey := strings.ReplaceAll(key, "'", "")
+		expr := fmt.Sprintf("json_extract(data, '$.%s')", jsonKey)
+		sql := fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s(%s);", idxName, c.table, expr)
+		if _, err := c.db.ExecContext(ctx, sql); err != nil {
+			return err
+		}
+	}
+	for groupName, keys := range groups {
+		if len(keys) == 0 {
+			continue
+		}
+		idxName := sanitizeIndexName("idx_" + c.table + "_" + groupName)
+		exprs := make([]string, 0, len(keys))
+		for _, key := range keys {
+			jsonKey := strings.ReplaceAll(key, "'", "")
+			exprs = append(exprs, fmt.Sprintf("json_extract(data, '$.%s')", jsonKey))
+		}
+		sql := fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s(%s);", idxName, c.table, strings.Join(exprs, ", "))
+		if _, err := c.db.ExecContext(ctx, sql); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -801,4 +873,28 @@ func sanitizeColumnName(name string) string {
 	name = strings.ReplaceAll(name, "\"", "")
 	name = strings.ReplaceAll(name, "'", "")
 	return strings.ReplaceAll(name, ".", "_")
+}
+
+
+func jsonKeyFromField(f reflect.StructField) string {
+	if tag, ok := f.Tag.Lookup("json"); ok {
+		if tag == "-" {
+			return ""
+		}
+		name := strings.Split(tag, ",")[0]
+		name = strings.TrimSpace(name)
+		if name != "" {
+			return name
+		}
+	}
+	return f.Name
+}
+
+func sanitizeIndexName(name string) string {
+	name = sanitizeColumnName(name)
+	name = strings.ReplaceAll(name, " ", "_")
+	name = strings.ReplaceAll(name, "-", "_")
+	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, "\\", "_")
+	return name
 }

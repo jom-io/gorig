@@ -1,6 +1,7 @@
 package test
 
 import (
+	"database/sql"
 	"github.com/jom-io/gorig/cache"
 	"testing"
 	"time"
@@ -90,5 +91,61 @@ func TestJSONFileCache_IncrAndExpire(t *testing.T) {
 	_, err = cacheIns.Get("counter")
 	if err == nil {
 		t.Errorf("Expected expired key to return error")
+	}
+}
+
+func TestSQLiteCachePage_IndexTags(t *testing.T) {
+	type Stat struct {
+		At     int64  `json:"at" idx:"at"`
+		Method string `json:"method" idx_group:"method_uri"`
+		URI    string `json:"uri" idx_group:"method_uri"`
+		Count  int64  `json:"count"`
+	}
+
+	name := "idx_test_cache"
+	_, err := cache.NewSQLiteCachePage[Stat](name)
+	if err != nil {
+		t.Fatalf("NewSQLiteCachePage failed: %v", err)
+	}
+
+	dbPath := ".cache/" + name + ".pg.db"
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open sqlite failed: %v", err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("PRAGMA index_list(" + name + ");")
+	if err != nil {
+		t.Fatalf("query index_list failed: %v", err)
+	}
+	defer rows.Close()
+
+	expected := map[string]bool{
+		"idx_" + name + "_at":         false,
+		"idx_" + name + "_method_uri": false,
+	}
+
+	for rows.Next() {
+		var seq int
+		var idxName string
+		var unique int
+		var origin string
+		var partial int
+		if err := rows.Scan(&seq, &idxName, &unique, &origin, &partial); err != nil {
+			t.Fatalf("scan index_list failed: %v", err)
+		}
+		if _, ok := expected[idxName]; ok {
+			expected[idxName] = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("index_list rows error: %v", err)
+	}
+
+	for name, found := range expected {
+		if !found {
+			t.Errorf("missing index: %s", name)
+		}
 	}
 }
