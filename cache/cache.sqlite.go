@@ -21,7 +21,7 @@ type SQLiteCache[T any] struct {
 var (
 	cacheSqliteIns sync.Map // map[string]any，缓存 SQLiteCache[T] 实例
 	dbLock         sync.Mutex
-	sqliteTimeOut  = 5 * time.Second
+	sqliteTimeOut  = 10 * time.Second
 )
 
 func NewSQLiteCache[T any](cacheType string) (*SQLiteCache[T], error) {

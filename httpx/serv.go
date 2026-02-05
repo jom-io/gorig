@@ -78,7 +78,7 @@ func init() {
 	gEngine.Use(Recovery())
 	gEngine.Use(Logger())
 	gEngine.Use(CORS())
-	gEngine.Use(gzip.Gzip(gzip.DefaultCompression))
+	gEngine.Use(gzip.Gzip(gzip.BestSpeed))
 	gEngine.Use(Debounce(200 * time.Millisecond))
 	//gEngine.Use(IdemVerify())
 	//gEngine.Use(SignVerify())
