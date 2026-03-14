@@ -16,7 +16,11 @@ const (
 
 func Notify(atUser string, title, msg string) {
 	webhookURL := "https://oapi.dingtalk.com/robot/send?access_token="
-	webhookURL = webhookURL + configure.GetString("notify.dingding.token")
+	token := configure.GetString("notify.dingding.token")
+	if token == "" {
+		return
+	}
+	webhookURL = webhookURL + token
 	hostname, _ := os.Hostname()
 	title = fmt.Sprintf("[%s系统][%s环境]%s \nHostname:%s", configure.GetString("sys.name"), configure.GetString("sys.mode"), title, hostname)
 	message := map[string]interface{}{
