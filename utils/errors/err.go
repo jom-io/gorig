@@ -68,6 +68,9 @@ func (e *Error) CodeInt() int {
 }
 
 func (e *Error) Error() string {
+	if e == nil {
+		return ""
+	}
 	if e.Err != nil && !errors.Is(e, e.Err) {
 		return fmt.Sprintf("[%s] %s. ******** %s ********", e.Code, e.Message, e.Err.Error())
 	}
