@@ -25,6 +25,8 @@ Or run directly using npx:
 npx gorig-cli@latest <command>
 ```
 
+You can also use `npx` directly without a global install for the common workflows below.
+
 ## Quick Start
 
 ### Initialize a New Project
@@ -59,6 +61,42 @@ npx gorig-cli@latest create user
 
 This will create a module named `user`, including directories such as `api/`, `internal/`, `model/`, and essential boilerplate code.
 
+### Install Gorig Skill
+
+The CLI also bundles the `gorig-backend` skill for Codex and Claude.
+
+Install both user-level skills at once:
+
+```sh
+npx gorig-cli@latest skill install all
+```
+
+Install only the Codex skill:
+
+```sh
+npx gorig-cli@latest skill install codex
+```
+
+Install the Claude skill for your user account:
+
+```sh
+npx gorig-cli@latest skill install claude user
+```
+
+Install the Claude skill only for the current project:
+
+```sh
+npx gorig-cli@latest skill install claude project
+```
+
+Install locations:
+
+- Codex: `${CODEX_HOME:-~/.codex}/skills/gorig-backend/`
+- Claude user-level: `~/.claude/skills/gorig-backend/`
+- Claude project-level: `.claude/skills/gorig-backend/`
+
+After installation, the skill can be invoked by agents that support local skills and is intended for gorig backend implementation, API changes, tests, and module documentation work.
+
 ### Running the Project
 
 Navigate to your project directory and run the project using:
@@ -73,4 +111,3 @@ Or compile and run:
 ```sh
 go build -o my-new-project _cmd/main.go && ./my-new-project
 ```
-
