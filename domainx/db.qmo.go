@@ -258,7 +258,11 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ..
 	} else {
 		if c.GetID().NotNil() {
 			c.SaveUpdateTime()
-			mErr := coll.UpdateOne(c.Ctx, bson.M{"con.id": c.ID}, bson.M{"$set": data})
+			updateDoc, err := buildMongoSaveUpdateDoc(data)
+			if err != nil {
+				return 0, err
+			}
+			mErr := coll.UpdateOne(c.Ctx, bson.M{"con.id": c.ID}, bson.M{"$set": updateDoc})
 			if mErr != nil {
 				return 0, mErr
 			}
@@ -285,6 +289,26 @@ func (s *mongoDBService) Save(c *Con, data Identifiable, newID int64, version ..
 			return c.ID, nil
 		}
 	}
+}
+
+func buildMongoSaveUpdateDoc(data Identifiable) (bson.M, error) {
+	raw, err := bson.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	var doc bson.M
+	if err = bson.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+
+	updateDoc := bson.M{
+		"options.updateAt": time.Now(),
+	}
+	if value, ok := doc["data"]; ok {
+		updateDoc["data"] = value
+	}
+	return updateDoc, nil
 }
 
 func (s *mongoDBService) UpdatePart(c *Con, id int64, data map[string]interface{}) error {

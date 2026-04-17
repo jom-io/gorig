@@ -52,6 +52,7 @@ Thumbs.db
 *.json
 *.cache
 *.cache.json
+.gocache/
 *.deploy
 *.linux64
 PROMPT.md

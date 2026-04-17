@@ -153,6 +153,68 @@ func TestTestModel_CRUD(t *testing.T) {
 
 	})
 
+	t.Run("SavePreservesCreateTime", func(t *testing.T) {
+		saveModel := setupTestModel()
+		saveID, err := dx.On[TestModel](ctx, saveModel).Save()
+		if err != nil {
+			t.Fatalf("Failed to save model for save update test: %v", err)
+		}
+		defer func() {
+			err = dx.On[TestModel](ctx).WithID(saveID).Delete()
+			if err != nil {
+				t.Fatalf("Failed to delete save update test model: %v", err)
+			}
+		}()
+
+		before, err := dx.On[TestModel](ctx).WithID(saveID).Get()
+		if err != nil {
+			t.Fatalf("Failed to get model before save update: %v", err)
+		}
+		if before.IsNil() {
+			t.Fatal("Get returned nil result before save update")
+		}
+		if before.CreatedAt.IsZero() {
+			t.Fatal("Expected CreatedAt to be set before save update")
+		}
+		if before.UpdatedAt.IsZero() {
+			t.Fatal("Expected UpdatedAt to be set before save update")
+		}
+
+		createdAt := before.CreatedAt
+		updatedAt := before.UpdatedAt
+
+		time.Sleep(10 * time.Millisecond)
+
+		model := &TestModel{
+			TestField1: "save-update",
+			TestField2: 400,
+			TestField3: false,
+			TestField4: 12.34,
+			TestField6: []string{"A", "B", "C"},
+		}
+		_, err = dx.On[TestModel](ctx, model).WithID(saveID).Save()
+		if err != nil {
+			t.Fatalf("Failed to save updated model: %v", err)
+		}
+
+		after, err := dx.On[TestModel](ctx).WithID(saveID).Get()
+		if err != nil {
+			t.Fatalf("Failed to get model after save update: %v", err)
+		}
+		if after.IsNil() {
+			t.Fatal("Get returned nil result after save update")
+		}
+		if !after.CreatedAt.Equal(createdAt) {
+			t.Fatalf("Expected CreatedAt to remain %v, got %v", createdAt, after.CreatedAt)
+		}
+		if after.UpdatedAt.Before(updatedAt) {
+			t.Fatalf("Expected UpdatedAt to be refreshed, before: %v, after: %v", updatedAt, after.UpdatedAt)
+		}
+		if after.Data.TestField1 != "save-update" || after.Data.TestField2 != 400 {
+			t.Fatalf("Expected data to be updated by save, got: %+v", after.Data)
+		}
+	})
+
 	t.Run("Get", func(t *testing.T) {
 		result, err := dx.On[TestModel](ctx).WithID(id).Get()
 		if err != nil {
