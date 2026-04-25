@@ -7,6 +7,7 @@ import (
 	"github.com/jom-io/gorig/serv"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/datatypes"
+	"strings"
 	"testing"
 	"time"
 )
@@ -151,6 +152,16 @@ func TestTestModel_CRUD(t *testing.T) {
 			t.Fatalf("Expected TestField2 to be 300 and TestField4 to be 9.42, got: %d and %f", getResult.Data.TestField2, getResult.Data.TestField4)
 		}
 
+	})
+
+	t.Run("UpdateByMatchNoMatch", func(t *testing.T) {
+		err := dx.On[TestModel](ctx).Eq("test_field1", "not-exists-update-match").Update("test_field2", 999)
+		if err == nil {
+			t.Fatal("Expected error when update condition matches no records")
+		}
+		if !strings.Contains(err.Error(), "no records matched update condition") {
+			t.Fatalf("Expected no match error, got: %v", err)
+		}
 	})
 
 	t.Run("SavePreservesCreateTime", func(t *testing.T) {

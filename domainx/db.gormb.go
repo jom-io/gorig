@@ -153,10 +153,20 @@ func (s *gormDBService) UpdatePart(c *Con, id int64, data map[string]interface{}
 
 func (s *gormDBService) UpdateByMatch(c *Con, matchList []Match, data map[string]interface{}) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	matchMysqlCond(matchList, tx)
+	tx, _ = matchMysqlCond(matchList, tx)
 	data["updated_at"] = time.Now()
-	if err := tx.Updates(data).Error; err != nil {
+	tx = tx.Updates(data)
+	if err := tx.Error; err != nil {
 		return err
+	}
+	if len(matchList) > 0 && tx.RowsAffected == 0 {
+		exists, err := s.ExistsByMatch(c, matchList)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("no records matched update condition")
+		}
 	}
 	return nil
 }
@@ -170,7 +180,7 @@ func (s *gormDBService) Delete(c *Con, data Identifiable) error {
 
 func (s *gormDBService) DeleteByMatch(c *Con, matchList []Match) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	matchMysqlCond(matchList, tx)
+	tx, _ = matchMysqlCond(matchList, tx)
 	if err := tx.Delete(&Options{}).Error; err != nil {
 		return err
 	}
@@ -182,7 +192,7 @@ var mysqlKeywords = []string{
 	"DESCRIBE", "EXPLAIN", "SHOW", "GRANT", "REVOKE", "USE", "LOCK", "UNLOCK", "SET", "COMMIT", "ROLLBACK",
 }
 
-func matchMysqlCond(matchList []Match, tx *gorm.DB) *NearMatch {
+func matchMysqlCond(matchList []Match, tx *gorm.DB) (*gorm.DB, *NearMatch) {
 	var nearMatch *NearMatch
 	for _, match := range matchList {
 		if v, ok := match.Value.(ValueField); ok && !v.Check(mysqlKeywords...) {
@@ -271,7 +281,7 @@ func matchMysqlCond(matchList []Match, tx *gorm.DB) *NearMatch {
 			tx = tx.Where(match.Field+" "+condition+" ?", match.Value)
 		}
 	}
-	return nearMatch
+	return tx, nearMatch
 }
 
 func mysqlNearExpr(near NearMatch) string {
@@ -314,7 +324,7 @@ func applyMysqlFields(tx *gorm.DB, c *Con, near *NearMatch) *gorm.DB {
 
 func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{}, prefixes ...string) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	near := matchMysqlCond(matchList, tx)
+	tx, near := matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	tx = applyMysqlFields(tx, c, near)
 	if err := tx.Limit(10000).Find(result).Error; err != nil {
@@ -325,7 +335,7 @@ func (s *gormDBService) FindByMatch(c *Con, matchList []Match, result interface{
 
 func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	near := matchMysqlCond(matchList, tx)
+	tx, near := matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	tx = applyMysqlFields(tx, c, near)
 	if err := tx.First(result).Error; err != nil {
@@ -336,7 +346,7 @@ func (s *gormDBService) GetByMatch(c *Con, matchList []Match, result interface{}
 
 func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName()).Where("deleted_at is null")
-	_ = matchMysqlCond(matchList, tx)
+	tx, _ = matchMysqlCond(matchList, tx)
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, err
@@ -346,7 +356,7 @@ func (s *gormDBService) CountByMatch(c *Con, matchList []Match) (int64, error) {
 
 func (s *gormDBService) ExistsByMatch(c *Con, matchList []Match) (bool, error) {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	_ = matchMysqlCond(matchList, tx)
+	tx, _ = matchMysqlCond(matchList, tx)
 	var exists int
 	if err := tx.Select("1").Limit(1).Scan(&exists).Error; err != nil {
 		return false, err
@@ -359,7 +369,7 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 	if !Check(field) {
 		return 0, errors.Sys(fmt.Sprintf("field is not valid: %s", field))
 	}
-	_ = matchMysqlCond(matchList, tx)
+	tx, _ = matchMysqlCond(matchList, tx)
 	var sum *float64
 	if err := tx.Select("sum(" + field + ")").Scan(&sum).Error; err != nil {
 		return 0, err
@@ -372,7 +382,7 @@ func (s *gormDBService) SumByMatch(c *Con, matchList []Match, field string) (flo
 
 func (s *gormDBService) FindByPageMatch(c *Con, matchList []Match, page *load.Page, total *load.Total, result interface{}, prefixes ...string) error {
 	tx := c.MysqlDB.WithContext(c.Ctx).Table(c.TableName())
-	near := matchMysqlCond(matchList, tx)
+	tx, near := matchMysqlCond(matchList, tx)
 	sortMysqlCond(c.Sort, tx)
 	count := int64(0)
 	if err := tx.Model(result).Count(&count).Error; err != nil {

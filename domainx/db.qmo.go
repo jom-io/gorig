@@ -327,7 +327,13 @@ func (s *mongoDBService) UpdateByMatch(c *Con, matchList []Match, data map[strin
 		return e
 	} else {
 		condition := matchMongoCond(matchList)
-		_, mErr := coll.UpdateAll(c.Ctx, mapToBsonM(condition), bson.M{"$set": mapToBsonM(data)})
+		result, mErr := coll.UpdateAll(c.Ctx, mapToBsonM(condition), bson.M{"$set": mapToBsonM(data)})
+		if mErr != nil {
+			return mErr
+		}
+		if len(matchList) > 0 && result.MatchedCount == 0 {
+			return fmt.Errorf("no records matched update condition")
+		}
 		return mErr
 	}
 }
