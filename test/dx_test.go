@@ -19,6 +19,7 @@ type TestModel struct {
 	TestField4 float64        `gorm:"column:test_field4;type:decimal(10,2);comment:test_field4" bson:"test_field4" json:"testField4" form:"testField4"`
 	TestField5 datatypes.JSON `gorm:"column:test_field5;type:json;comment:test_field5" bson:"-" json:"testField5" form:"testField5"`
 	TestField6 []string       `gorm:"-" bson:"test_field6" json:"testField6" form:"testField6"`
+	Config     string         `gorm:"-" bson:"config" json:"config" form:"config"`
 }
 
 // Mysql configuration for the TestModel
@@ -37,6 +38,7 @@ func setupTestModel() *TestModel {
 		TestField2: 42,
 		TestField3: true,
 		TestField4: 3.14,
+		Config:     "default-config",
 	}
 	conType, _, _ := testModel.DConfig()
 	if conType == domainx.Mysql {
@@ -161,6 +163,28 @@ func TestTestModel_CRUD(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "no records matched update condition") {
 			t.Fatalf("Expected no match error, got: %v", err)
+		}
+	})
+
+	t.Run("UpdateConfigFieldByMatch", func(t *testing.T) {
+		if conType, _, _ := setupTestModel().DConfig(); conType != domainx.Mongo {
+			t.Skip("config field prefix regression only applies to mongo")
+		}
+
+		err := dx.On[TestModel](ctx).Eq("test_field1", "example").Update("config", "updated-config")
+		if err != nil {
+			t.Fatalf("Failed to update config field by match: %v", err)
+		}
+
+		getResult, err := dx.On[TestModel](ctx).WithID(id).Get()
+		if err != nil {
+			t.Fatalf("Failed to get model after config update: %v", err)
+		}
+		if getResult.IsNil() {
+			t.Fatal("Get returned nil result after config update")
+		}
+		if getResult.Data.Config != "updated-config" {
+			t.Fatalf("Expected Config to be updated-config, got: %s", getResult.Data.Config)
 		}
 	})
 

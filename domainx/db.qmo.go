@@ -54,7 +54,8 @@ func (p pre) ad(s ...string) string {
 }
 
 func (p pre) has(s string) bool {
-	return strings.HasPrefix(s, p.str())
+	prefix := p.str()
+	return s == prefix || strings.HasPrefix(s, prefix+".")
 }
 
 func hasDef(s string) bool {
