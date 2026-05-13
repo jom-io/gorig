@@ -17,6 +17,12 @@ const (
 		"Authorization, "
 )
 
+var otherAllowHeaders = []string{}
+
+func SetOtherAllowHeaders(headers ...string) {
+	otherAllowHeaders = headers
+}
+
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
@@ -26,6 +32,9 @@ func CORS() gin.HandlerFunc {
 		c.Writer.Header().Set("Vary", "Origin")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", AllowMethods)
 		c.Writer.Header().Set("Access-Control-Allow-Headers", AllowHeaders+"cache-control")
+		for _, h := range otherAllowHeaders {
+			c.Writer.Header().Add("Access-Control-Allow-Headers", h)
+		}
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 
