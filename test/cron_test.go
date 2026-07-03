@@ -100,6 +100,20 @@ func TestAddEveryTask_BasicExecution(t *testing.T) {
 	_ = cronx.Shutdown("CRON", context.Background())
 }
 
+func TestAddEveryTask_ReturnsWithoutDeadlock(t *testing.T) {
+	done := make(chan struct{})
+	go func() {
+		cronx.AddEveryTask(500*time.Millisecond, func(ctx context.Context) {})
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("AddEveryTask deadlocked while registering task")
+	}
+}
+
 func TestAddDelayTask_BasicExecution(t *testing.T) {
 	var count int32
 	delay := 1 * time.Second

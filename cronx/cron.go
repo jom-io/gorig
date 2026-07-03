@@ -90,9 +90,6 @@ func AddCronTask(spec string, f func(ctx context.Context), timeout ...time.Durat
 
 // AddEveryTask is a convenience function to add a task that runs at a regular interval.
 func AddEveryTask(interval time.Duration, f func(ctx context.Context), timeout ...time.Duration) {
-	taskMux.Lock()
-	defer taskMux.Unlock()
-
 	if interval <= time.Millisecond {
 		logger.Warn(nil, "invalid interval for cron task", zap.Duration("interval", interval))
 		return
