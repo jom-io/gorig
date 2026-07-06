@@ -213,9 +213,11 @@ func start() {
 		t.EntryID = id
 	}
 	if len(taskList) == 0 {
+		startPersistWorker()
 		return
 	}
 	c.Start()
+	startPersistWorker()
 }
 
 func Startup(code, port string) error {
@@ -226,6 +228,7 @@ func Startup(code, port string) error {
 
 func Shutdown(code string, ctx context.Context) error {
 	sys.Info("  * Cron service shutdown")
+	stopPersistWorker()
 	if c != nil {
 		c.Stop()
 	}

@@ -120,7 +120,7 @@ func (b *Behavior) processMessage(message *messagex.Message) {
 		result, e := b.Result.Validator(message)
 		if e != nil || !result {
 			if b.IsFirst() {
-				logger.Info(message.ToNewGinCtx(), fmt.Sprintf("name %s topic %s validator failed", b.Name, b.Result.Topic), zap.Error(e))
+				logger.Info(message.Ctx, fmt.Sprintf("name %s topic %s validator failed", b.Name, b.Result.Topic), zap.Error(e))
 			} else {
 				err = errors.Sys(fmt.Sprintf("name %s topic %s validator failed", b.Name, b.Result.Topic), e)
 			}
@@ -156,14 +156,17 @@ func (b *Behavior) processMessage(message *messagex.Message) {
 		}
 		b.Next.Name = b.Name
 		subID, _ := messagex.RegisterTopic(b.Next.Result.Topic, func(nextMessage *messagex.Message) *errors.Error {
-			logger.Info(nextMessage.ToNewGinCtx(), fmt.Sprintf("%s subID %d receive message", b.Name, b.SubID))
+			if nextMessage == nil {
+				return errors.Sys(fmt.Sprintf("%s subID %d receive nil message", b.Name, b.SubID))
+			}
+			logger.Info(nextMessage.Ctx, fmt.Sprintf("%s subID %d receive message", b.Name, b.SubID))
 			go b.Next.processMessage(nextMessage.DeepCopy())
 			return nil
 		})
 		b.Next.SubID = subID
 		go b.Next.publishMessage(message)
 	} else {
-		logger.Info(message.ToNewGinCtx(), fmt.Sprintf("%s subID %d execute completed", b.Name, b.SubID))
+		logger.Info(message.Ctx, fmt.Sprintf("%s subID %d execute completed", b.Name, b.SubID))
 	}
 	if b.SubID != 0 {
 		if subscribeErr := messagex.UnSubscribe(b.Result.Topic, b.SubID); subscribeErr != nil {
@@ -175,12 +178,12 @@ func (b *Behavior) processMessage(message *messagex.Message) {
 // publishMessage 发布消息
 func (b *Behavior) publishMessage(message *messagex.Message) {
 	defer messagex.HandlePanic(message)
-	if b.Action.Topic == "" {
-		logger.Error(message.ToNewGinCtx(), "action topic is empty", zap.String("name", b.Name))
+	if message == nil {
+		logger.Error(nil, "message is nil", zap.String("name", b.Name))
 		return
 	}
-	if message == nil {
-		logger.Error(message.ToNewGinCtx(), "message is nil", zap.String("name", b.Name))
+	if b.Action.Topic == "" {
+		logger.Error(message.Ctx, "action topic is empty", zap.String("name", b.Name))
 		return
 	}
 
