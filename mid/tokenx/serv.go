@@ -83,7 +83,7 @@ func getManager(managerType ManagerType, generator TokenGenerator) TokenManager 
 			generator: generator,
 		}
 	case Redis:
-	// todo
+		return newRedisImpl(generator)
 	default:
 		return &memoryImpl{
 			generator: generator,
