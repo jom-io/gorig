@@ -1,0 +1,121 @@
+<svg width="1120" height="620" viewBox="0 0 1120 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Gorig AI-native backend delivery system</title>
+  <desc id="desc">A product-oriented visual showing how Gorig turns a business idea into a governed, verified, observable backend service with CLI, skill, runtime, hub, node, and operations tools.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1120" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset="0.52" stop-color="#F4F7F2"/>
+      <stop offset="1" stop-color="#FFF7EF"/>
+    </linearGradient>
+    <linearGradient id="core" x1="330" y1="118" x2="790" y2="454" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#132238"/>
+      <stop offset="0.55" stop-color="#183B42"/>
+      <stop offset="1" stop-color="#214931"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="184" y1="235" x2="934" y2="310" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF7A59" stop-opacity="0.95"/>
+      <stop offset="0.34" stop-color="#2CB67D" stop-opacity="0.95"/>
+      <stop offset="0.67" stop-color="#3B82F6" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#F5B841" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-24%" width="140%" height="152%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#1C2E3D" flood-opacity="0.16" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="tightShadow" x="-18%" y="-18%" width="136%" height="136%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1C2E3D" flood-opacity="0.12" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" stroke="#33515E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect width="1120" height="620" rx="28" fill="url(#bg)"/>
+  <path d="M70 470C172 401 218 386 332 417C438 446 498 500 633 461C760 424 835 329 1038 364" stroke="#D5E4DC" stroke-width="2"/>
+  <path d="M80 160C190 94 294 95 394 142C481 183 545 198 641 149C764 86 882 76 1036 132" stroke="#E8D7C3" stroke-width="2"/>
+
+  <text x="72" y="83" fill="#152333" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Gorig</text>
+  <text x="72" y="123" fill="#122032" font-family="Inter, Arial, sans-serif" font-size="39" font-weight="900">AI-native backend delivery</text>
+  <text x="72" y="153" fill="#536575" font-family="Inter, Arial, sans-serif" font-size="16">From intent to production.</text>
+
+  <rect x="72" y="196" width="220" height="104" rx="12" fill="#FFFFFF" stroke="#E1E8EF" filter="url(#tightShadow)"/>
+  <rect x="96" y="218" width="56" height="16" rx="8" fill="#FFE4D9"/>
+  <text x="100" y="230" fill="#A13D22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="800">INTENT</text>
+  <text x="96" y="258" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="19" font-weight="850">Business request</text>
+  <text x="96" y="286" fill="#607384" font-family="Inter, Arial, sans-serif" font-size="12">CRUD, auth, jobs, APIs, ops</text>
+
+  <rect x="828" y="196" width="220" height="104" rx="12" fill="#FFFFFF" stroke="#E1E8EF" filter="url(#tightShadow)"/>
+  <rect x="852" y="218" width="66" height="16" rx="8" fill="#DFF6EA"/>
+  <text x="856" y="230" fill="#1F7A4B" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="800">SHIPPED</text>
+  <text x="852" y="258" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="19" font-weight="850">Runnable backend</text>
+  <text x="852" y="286" fill="#607384" font-family="Inter, Arial, sans-serif" font-size="12">Code, tests, docs, dashboard</text>
+
+  <path d="M300 244H820" stroke="url(#beam)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M300 244H820" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <rect x="350" y="154" width="420" height="268" rx="22" fill="#1C2E3D" opacity="0.14"/>
+  <rect x="340" y="138" width="440" height="292" rx="22" fill="url(#core)"/>
+  <rect x="366" y="166" width="388" height="42" rx="10" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.16"/>
+  <circle cx="390" cy="187" r="6" fill="#FF7A59"/>
+  <circle cx="412" cy="187" r="6" fill="#F5B841"/>
+  <circle cx="434" cy="187" r="6" fill="#2CB67D"/>
+  <text x="460" y="192" fill="#DCE9ED" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700">gorig-cli + gorig-backend skill</text>
+
+  <text x="388" y="252" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="900">One system for AI-built</text>
+  <text x="388" y="287" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="900">production backends</text>
+  <text x="388" y="318" fill="#C5D5D9" font-family="Inter, Arial, sans-serif" font-size="15">Structured modules, current APIs,</text>
+  <text x="388" y="340" fill="#C5D5D9" font-family="Inter, Arial, sans-serif" font-size="15">verified behavior, and operational visibility.</text>
+
+  <rect x="388" y="354" width="79" height="32" rx="16" fill="#FF7A59"/>
+  <text x="409" y="375" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850">create</text>
+  <rect x="478" y="354" width="88" height="32" rx="16" fill="#2CB67D"/>
+  <text x="499" y="375" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850">govern</text>
+  <rect x="577" y="354" width="82" height="32" rx="16" fill="#3B82F6"/>
+  <text x="600" y="375" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850">verify</text>
+  <rect x="670" y="354" width="62" height="32" rx="16" fill="#F5B841"/>
+  <text x="686" y="375" fill="#23303B" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850">run</text>
+
+  <rect x="96" y="342" width="198" height="128" rx="14" fill="#FFFFFF" stroke="#E1E8EF" filter="url(#tightShadow)"/>
+  <path d="M120 366H148M120 384H188M120 402H164" stroke="#FF7A59" stroke-width="4" stroke-linecap="round"/>
+  <text x="120" y="430" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="850">Generate faster</text>
+  <text x="120" y="454" fill="#607384" font-family="Inter, Arial, sans-serif" font-size="12">Project, module, CRUD, docs</text>
+
+  <rect x="306" y="444" width="230" height="82" rx="14" fill="#FFFFFF" stroke="#E1E8EF" filter="url(#tightShadow)"/>
+  <circle cx="334" cy="480" r="16" fill="#E4F8EE"/>
+  <path d="M326 480L332 486L343 473" stroke="#1F7A4B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="374" y="477" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">Govern AI output</text>
+  <text x="374" y="501" fill="#607384" font-family="Inter, Arial, sans-serif" font-size="12">Stable layers and source rules</text>
+
+  <rect x="584" y="444" width="230" height="82" rx="14" fill="#FFFFFF" stroke="#E1E8EF" filter="url(#tightShadow)"/>
+  <circle cx="612" cy="480" r="16" fill="#E7F0FF"/>
+  <path d="M603 480H621M612 471V489" stroke="#2F6EDB" stroke-width="3" stroke-linecap="round"/>
+  <text x="652" y="477" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">Verify behavior</text>
+  <text x="652" y="501" fill="#607384" font-family="Inter, Arial, sans-serif" font-size="12">Build, tests, smoke checks</text>
+
+  <rect x="826" y="342" width="198" height="128" rx="14" fill="#FFFFFF" stroke="#E1E8EF" filter="url(#tightShadow)"/>
+  <path d="M884 386C884 372 897 362 912 362H944C959 362 972 372 972 386C972 400 959 410 944 410H912C897 410 884 400 884 386Z" fill="#FFF2D5"/>
+  <path d="M908 386L920 394L948 372" stroke="#8B6111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="850" y="424" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">Operate with</text>
+  <text x="850" y="446" fill="#142131" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">eyes open</text>
+  <text x="850" y="466" fill="#607384" font-family="Inter, Arial, sans-serif" font-size="12">Health, logs, metrics, rollback</text>
+
+  <rect x="72" y="560" width="976" height="30" rx="15" fill="#FFFFFF" stroke="#E3EAF0"/>
+  <text x="102" y="580" fill="#485C6C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="750">gorig-cli</text>
+  <circle cx="190" cy="575" r="3" fill="#9DAFBC"/>
+  <text x="210" y="580" fill="#485C6C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="750">gorig-backend skill</text>
+  <circle cx="356" cy="575" r="3" fill="#9DAFBC"/>
+  <text x="376" y="580" fill="#485C6C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="750">Gorig framework</text>
+  <circle cx="524" cy="575" r="3" fill="#9DAFBC"/>
+  <text x="544" y="580" fill="#485C6C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="750">gorig-node</text>
+  <circle cx="654" cy="575" r="3" fill="#9DAFBC"/>
+  <text x="674" y="580" fill="#485C6C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="750">gorig-hub SDKs</text>
+  <circle cx="822" cy="575" r="3" fill="#9DAFBC"/>
+  <text x="842" y="580" fill="#485C6C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="750">gorig-om operations</text>
+</svg>
