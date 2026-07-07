@@ -114,15 +114,15 @@ npx gorig-cli@latest skill install codex project
 然后用产品语言提出需求：
 
 ```text
-Use the gorig-backend skill to create a customer management backend with CRUD APIs, MySQL persistence, tests, and API docs.
+使用 gorig-backend skill，创建一个客户管理后端，包含 CRUD 接口、MySQL 持久化、测试和 API 文档。
 ```
 
 ```text
-Use the gorig-backend skill to add login, protected routes, token refresh, logout, and security tests to this Gorig service.
+使用 gorig-backend skill，为这个 Gorig 服务增加登录、受保护路由、Token 刷新、退出登录和安全测试。
 ```
 
 ```text
-Use the gorig-backend skill to prepare this service for deployment with health checks, structured logs, release layout, and rollback steps.
+使用 gorig-backend skill，把这个服务整理到可部署状态：补充健康检查、结构化日志、发布目录和回滚步骤。
 ```
 
 ## 框架依赖安装
